@@ -236,6 +236,24 @@ export const TimeKeepList = () => {
             rowSelection,
         },
     });
+    const setIp=()=>{
+        (async ()=>{
+            try {
+                await timeKeepApi.setIp();
+                toast({
+                    title:"Thành công",
+                    description:"Đặt lại IP thành công"
+                })
+            } catch (error) {
+                toast({
+                    variant:"destructive",
+                    title:"Thất bại",
+                    description:"IP Không đổi"
+                })
+            }
+        }
+        )()
+    }
     const schema_date = yup.object().shape({
         dateRange: yup
             .string()
@@ -535,6 +553,10 @@ export const TimeKeepList = () => {
                             </DialogFooter>
                         </DialogContent>
                     </Dialog>
+                    <Button onClick={setIp} className="flex gap-3">
+                                    <Icons.wifi />
+                                    Đặt lại IP
+                                </Button>
                 </div>
                 <DataTableViewOptions table={table} />
             </div>

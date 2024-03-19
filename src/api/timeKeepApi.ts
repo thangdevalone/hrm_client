@@ -23,6 +23,10 @@ const timeKeepApi = {
         const url='timesheet/check-out';
         return axiosClient.post(url);
     },
+    setIp(){
+        const url='timesheet/set-ip';
+        return axiosClient.post(url);
+    },
     listNoAttendance(param?: QueryParam){
         const url = `timesheet/registed-without-attendance${ConvertQueryParam(param)}`
         return axiosClient.get(url);
