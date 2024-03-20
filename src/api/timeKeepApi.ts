@@ -40,16 +40,10 @@ const timeKeepApi = {
             }
         );
     },
-    setIp(p: string) {
-        const url = `timesheet/set-ip?crypto=${p}`;
+    setIp() {
+        const url = `timesheet/set-ip`;
         return axiosClient.post(
-            url,
-            {"data":"setIp"},
-            {
-                headers: {
-                    'X-Forwarded-For': p,
-                },
-            }
+            url
         );
     },
     listNoAttendance(param?: QueryParam) {
