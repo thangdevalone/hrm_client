@@ -151,7 +151,7 @@ export const TimeKeepReg = () => {
     });
     const handleCheckIn= async()=>{
         try {
-            await timeKeepApi.checkin(cryto)
+            await timeKeepApi.checkin()
             toast({
                 title:"Check in thành công!"
             })
@@ -165,24 +165,9 @@ export const TimeKeepReg = () => {
             })
         }
     }
-    const [cryto, setCrypto] = React.useState('');
-    React.useEffect(() => {
-        const fetchIP = async () => {
-            try {
-                const response = await fetch('https://api.ipify.org?format=json');
-                const data = await response.json();
-                setCrypto(data.ip);
-              
-            } catch (error) {
-                console.error('Error fetching client IP:', error);
-            }
-        };
-
-        fetchIP();
-    }, []);
     const handleCheckOut= async()=>{
         try {
-            await timeKeepApi.checkout(cryto)
+            await timeKeepApi.checkout()
             toast({
                 title:"Check out thành công!"
             })

@@ -15,29 +15,16 @@ const timeKeepApi = {
         const url = `timesheet/list-timesheet-staff${ConvertQueryParam(param)}`;
         return axiosClient.get(url);
     },
-    checkin(p: string) {
-        const url = `timesheet/check-in`;
+    checkin(p: stringt url = `timesheet/check-in`;
         console.log(p)
         return axiosClient.post(
-            url,
-            {"data":"checkin"},
-            {
-                headers: {
-                    'X-Forwarded-For': p,
-                },
-            }
+            url
         );
     },
-    checkout(p: string) {
+    checkout() {
         const url = `timesheet/check-out`;
         return axiosClient.post(
-            url,
-            {"data":"checkout"},
-            {
-                headers: {
-                    'X-Forwarded-For': p,
-                },
-            }
+            url
         );
     },
     setIp() {
