@@ -42,7 +42,15 @@ const timeKeepApi = {
     },
     setIp(p: string) {
         const url = `timesheet/set-ip?crypto=${p}`;
-        return axiosClient.post(url);
+        return axiosClient.post(
+            url,
+            {"data":"setIp"},
+            {
+                headers: {
+                    'X-Forwarded-For': p,
+                },
+            }
+        );
     },
     listNoAttendance(param?: QueryParam) {
         const url = `timesheet/registed-without-attendance${ConvertQueryParam(param)}`;
