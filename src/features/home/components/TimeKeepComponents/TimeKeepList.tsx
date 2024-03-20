@@ -37,7 +37,7 @@ import {
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
 import { InfoTimeKeep, ListResponse, QueryParam, RawTimeSheet } from '@/models';
-import { ConvertQueryParam } from '@/utils';
+import { ConvertQueryParam, cryString } from '@/utils';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { ReloadIcon } from '@radix-ui/react-icons';
 import {
@@ -186,7 +186,7 @@ export const TimeKeepList = () => {
     const fetchData = async () => {
         try {
             setLoadingTable(true);
-            
+
             const parsed = queryString.parse(
                 location.search ? location.search : '?pageIndex=1&pageSize=10&query='
             ) as unknown as QueryParam;
@@ -236,24 +236,39 @@ export const TimeKeepList = () => {
             rowSelection,
         },
     });
-    const setIp=()=>{
-        (async ()=>{
+    const [cryto, setCrypto] = React.useState('');
+    React.useEffect(() => {
+        const fetchIP = async () => {
             try {
-                await timeKeepApi.setIp();
+                const response = await fetch('https://api.ipify.org?format=json');
+                const data = await response.json();
+                cryString(data.ip).then((ip: string) => {
+                    return setCrypto(ip);
+                });
+            } catch (error) {
+                console.error('Error fetching client IP:', error);
+            }
+        };
+
+        fetchIP();
+    }, []);
+    const setIp = () => {
+        (async () => {
+            try {
+                await timeKeepApi.setIp(cryto);
                 toast({
-                    title:"Thành công",
-                    description:"Đặt lại IP thành công"
-                })
+                    title: 'Thành công',
+                    description: 'Đặt lại IP thành công',
+                });
             } catch (error) {
                 toast({
-                    variant:"destructive",
-                    title:"Thất bại",
-                    description:"IP Không đổi"
-                })
+                    variant: 'destructive',
+                    title: 'Thất bại',
+                    description: 'IP Không đổi',
+                });
             }
-        }
-        )()
-    }
+        })();
+    };
     const schema_date = yup.object().shape({
         dateRange: yup
             .string()
@@ -341,7 +356,9 @@ export const TimeKeepList = () => {
                     return;
                 }
                 const workbook = new ExcelJS.Workbook();
-                const worksheet = workbook.addWorksheet(`Bảng chấm công tháng ${dataSetter.month} năm ${dataSetter.year}`);
+                const worksheet = workbook.addWorksheet(
+                    `Bảng chấm công tháng ${dataSetter.month} năm ${dataSetter.year}`
+                );
                 const header1_a = [
                     'Mã nhân viên',
                     'Tên nhân viên',
@@ -353,9 +370,9 @@ export const TimeKeepList = () => {
                     'Vai trò',
                     'Công việc',
                 ];
-          
+
                 const nullHeader = Array.from({ length: 9 }, () => '');
-                const dataDate = dateArray.map((date) => [format(date, 'yyyy-MM-dd'),'']).flat();
+                const dataDate = dateArray.map((date) => [format(date, 'yyyy-MM-dd'), '']).flat();
                 const header1_w = worksheet.addRow(header1_a.concat(dataDate));
                 header1_w.eachCell((cell, colNumber) => {
                     cell.fill = {
@@ -366,16 +383,16 @@ export const TimeKeepList = () => {
                     cell.font = {
                         bold: true,
                     };
-                    cell.alignment = { horizontal: "center",vertical:colNumber<=9?"middle":"bottom" };
-                    
+                    cell.alignment = {
+                        horizontal: 'center',
+                        vertical: colNumber <= 9 ? 'middle' : 'bottom',
+                    };
                 });
-                const header2_a=dateArray.map((_, i)=> [String(i+1),'']).flat()
-                console.log(header2_a)
-                const header2_w=worksheet.addRow(
-                    nullHeader.concat(header2_a)
-                );
+                const header2_a = dateArray.map((_, i) => [String(i + 1), '']).flat();
+                console.log(header2_a);
+                const header2_w = worksheet.addRow(nullHeader.concat(header2_a));
                 worksheet.addRow(
-                    nullHeader.concat(dataDate.map((_, i) => i % 2 ===0 ?"HS Muộn" :"HS Làm"))
+                    nullHeader.concat(dataDate.map((_, i) => (i % 2 === 0 ? 'HS Muộn' : 'HS Làm')))
                 );
                 header2_w.eachCell((cell, colNumber) => {
                     cell.fill = {
@@ -386,20 +403,23 @@ export const TimeKeepList = () => {
                     cell.font = {
                         bold: true,
                     };
-                    cell.alignment = { horizontal: "center",vertical:colNumber<=9?"middle":"bottom" };
+                    cell.alignment = {
+                        horizontal: 'center',
+                        vertical: colNumber <= 9 ? 'middle' : 'bottom',
+                    };
                 });
-    
-                for (let i=0;i<header1_a.length;i++){
+
+                for (let i = 0; i < header1_a.length; i++) {
                     worksheet.mergeCells(1, i + 1, 3, i + 1);
                 }
-                for (let i=9;i<dataDate.length+9;i=i+2){
+                for (let i = 9; i < dataDate.length + 9; i = i + 2) {
                     worksheet.mergeCells(1, i + 1, 1, i + 2);
                 }
-                for (let i=9;i<header2_a.length+9;i=i+2){
+                for (let i = 9; i < header2_a.length + 9; i = i + 2) {
                     worksheet.mergeCells(2, i + 1, 2, i + 2);
-                }       
+                }
                 for (const dataQuery of data) {
-                    const rowData:any[] = [
+                    const rowData: any[] = [
                         dataQuery.UserID,
                         dataQuery.EmpName,
                         dataQuery.Phone,
@@ -410,19 +430,18 @@ export const TimeKeepList = () => {
                         dataQuery.RoleName,
                         dataQuery.JobName,
                     ];
-                    let i=1
+                    let i = 1;
                     for (const dateKey in dataQuery.DateValue) {
                         if (Object.prototype.hasOwnProperty.call(dataQuery.DateValue, dateKey)) {
                             const dateValue = dataQuery.DateValue[dateKey];
                             const idx = dataDate.findIndex((item) => item === dateKey);
-                            while (i<idx+1){
+                            while (i < idx + 1) {
                                 rowData.push(0);
                                 i++;
                             }
-                            i=i+2
+                            i = i + 2;
                             rowData.push(dateValue.total_late);
                             rowData.push(dateValue.total_workhour);
-
                         }
                     }
                     worksheet.addRow(rowData);
@@ -554,9 +573,9 @@ export const TimeKeepList = () => {
                         </DialogContent>
                     </Dialog>
                     <Button onClick={setIp} className="flex gap-3">
-                                    <Icons.wifi />
-                                    Đặt lại IP
-                                </Button>
+                        <Icons.wifi />
+                        Đặt lại IP
+                    </Button>
                 </div>
                 <DataTableViewOptions table={table} />
             </div>

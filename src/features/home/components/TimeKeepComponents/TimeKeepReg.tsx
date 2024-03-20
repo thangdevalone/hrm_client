@@ -19,7 +19,7 @@ import {
     ListResponse,
     QueryParam
 } from '@/models';
-import { ConvertQueryParam } from '@/utils';
+import { ConvertQueryParam, cryString } from '@/utils';
 import { ReloadIcon } from '@radix-ui/react-icons';
 import {
     ColumnDef,
@@ -151,7 +151,7 @@ export const TimeKeepReg = () => {
     });
     const handleCheckIn= async()=>{
         try {
-            await timeKeepApi.checkin()
+            await timeKeepApi.checkin(cryto)
             toast({
                 title:"Check in thành công!"
             })
@@ -160,13 +160,30 @@ export const TimeKeepReg = () => {
             console.log(error)
             toast({
                 variant:"destructive",
-                title:"Check in thất bại!"
+                title:"Check in thất bại!",
+                description:error.error
             })
         }
     }
+    const [cryto, setCrypto] = React.useState('');
+    React.useEffect(() => {
+        const fetchIP = async () => {
+            try {
+                const response = await fetch('https://api.ipify.org?format=json');
+                const data = await response.json();
+                cryString(data.ip).then((ip: string) => {
+                    return setCrypto(ip);
+                });
+            } catch (error) {
+                console.error('Error fetching client IP:', error);
+            }
+        };
+
+        fetchIP();
+    }, []);
     const handleCheckOut= async()=>{
         try {
-            await timeKeepApi.checkout()
+            await timeKeepApi.checkout(cryto)
             toast({
                 title:"Check out thành công!"
             })
@@ -175,7 +192,8 @@ export const TimeKeepReg = () => {
             console.log(error)
             toast({
                 variant:"destructive",
-                title:"Check out thất bại!"
+                title:"Check in thất bại!",
+                description:error.error
             })
         }
     }

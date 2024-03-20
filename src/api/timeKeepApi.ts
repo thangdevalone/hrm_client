@@ -15,16 +15,16 @@ const timeKeepApi = {
         const url = `timesheet/list-timesheet-staff${ConvertQueryParam(param)}`;
         return axiosClient.get(url);
     },
-    checkin(){
-        const url='timesheet/check-in';
+    checkin(p:string){
+        const url=`timesheet/check-in?ip=${p}`;
         return axiosClient.post(url);
     },
-    checkout(){
-        const url='timesheet/check-out';
+    checkout(p:string){
+        const url=`timesheet/check-out?ip=${p}`;
         return axiosClient.post(url);
     },
-    setIp(){
-        const url='timesheet/set-ip';
+    setIp(p:string){
+        const url=`timesheet/set-ip?crypto=${p}`;
         return axiosClient.post(url);
     },
     listNoAttendance(param?: QueryParam){

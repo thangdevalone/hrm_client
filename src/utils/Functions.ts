@@ -1,6 +1,21 @@
-import { addWeeks, compareAsc, format, isAfter, isBefore, isSameDay, parse, parseISO, startOfWeek } from "date-fns";
+import { addWeeks, format, isAfter, isBefore, isSameDay, parse, startOfWeek } from "date-fns";
 import { TimeValue } from "react-aria";
 
+
+export async function cryString(inputString: string) {
+    // Create a hash object using SHA256 algorithm
+    const inputBytes = new TextEncoder().encode(inputString);
+
+    // Hash the input using SHA-256
+    const hashBuffer = await crypto.subtle.digest('SHA-256', inputBytes);
+  
+    // Convert the hash buffer to hexadecimal representation
+    const hashedValue = Array.from(new Uint8Array(hashBuffer))
+      .map(byte => byte.toString(16).padStart(2, '0'))
+      .join('');
+  
+    return hashedValue;
+}
 export function formatTime(timeString:string) {
     const parsedTime = parse(timeString, 'HH:mm:ss', new Date());
     return format(parsedTime, 'h:mm a');
