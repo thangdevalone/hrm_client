@@ -254,7 +254,7 @@ export const TimeKeepList = () => {
     const setIp = () => {
         (async () => {
             try {
-                await timeKeepApi.setIp(cryto);
+                await timeKeepApi.setIp();
                 toast({
                     title: 'Thành công',
                     description: 'Đặt lại IP thành công',
