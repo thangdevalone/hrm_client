@@ -171,9 +171,8 @@ export const TimeKeepReg = () => {
             try {
                 const response = await fetch('https://api.ipify.org?format=json');
                 const data = await response.json();
-                cryString(data.ip).then((ip: string) => {
-                    return setCrypto(ip);
-                });
+                setCrypto(data.ip);
+              
             } catch (error) {
                 console.error('Error fetching client IP:', error);
             }

@@ -15,23 +15,38 @@ const timeKeepApi = {
         const url = `timesheet/list-timesheet-staff${ConvertQueryParam(param)}`;
         return axiosClient.get(url);
     },
-    checkin(p:string){
-        const url=`timesheet/check-in?ip=${p}`;
+    checkin(p: string) {
+        const url = `timesheet/check-in`;
+        console.log(p)
+        return axiosClient.post(
+            url,
+            {"data":"checkin"},
+            {
+                headers: {
+                    'X-Forwarded-For': p,
+                },
+            }
+        );
+    },
+    checkout(p: string) {
+        const url = `timesheet/check-out`;
+        return axiosClient.post(
+            url,
+            {"data":"checkout"},
+            {
+                headers: {
+                    'X-Forwarded-For': p,
+                },
+            }
+        );
+    },
+    setIp(p: string) {
+        const url = `timesheet/set-ip?crypto=${p}`;
         return axiosClient.post(url);
     },
-    checkout(p:string){
-        const url=`timesheet/check-out?ip=${p}`;
-        return axiosClient.post(url);
-    },
-    setIp(p:string){
-        const url=`timesheet/set-ip?crypto=${p}`;
-        return axiosClient.post(url);
-    },
-    listNoAttendance(param?: QueryParam){
-        const url = `timesheet/registed-without-attendance${ConvertQueryParam(param)}`
+    listNoAttendance(param?: QueryParam) {
+        const url = `timesheet/registed-without-attendance${ConvertQueryParam(param)}`;
         return axiosClient.get(url);
-
-    }
- 
+    },
 };
 export default timeKeepApi;
