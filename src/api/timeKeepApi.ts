@@ -15,8 +15,8 @@ const timeKeepApi = {
         const url = `timesheet/list-timesheet-staff${ConvertQueryParam(param)}`;
         return axiosClient.get(url);
     },
-    checkin(p: stringt url = `timesheet/check-in`;
-        console.log(p)
+    checkin() {
+        const url = `timesheet/check-in`;
         return axiosClient.post(
             url
         );
