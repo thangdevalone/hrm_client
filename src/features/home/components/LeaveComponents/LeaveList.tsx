@@ -10,13 +10,16 @@ import {
 import { DataTablePagination, DataTableViewOptions } from '@/components/common';
 import { DataTableColumnHeader } from '@/components/common/DataTableColumnHeader';
 import { DataTableFilter } from '@/components/common/DataTableFilter';
+import { Icons } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
     DialogClose,
     DialogContent,
+    DialogDescription,
     DialogFooter,
     DialogHeader,
     DialogTitle,
@@ -30,6 +33,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Form } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { SelectItem } from '@/components/ui/select';
 import {
@@ -41,11 +45,13 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
+import { STATIC_HOST } from '@/constants';
 import { useInfoUser } from '@/hooks';
+import { cn } from '@/lib/utils';
 import { InfoLeave, LeaveCreateForm, LeaveEditForm, ListResponse, QueryParam } from '@/models';
 import { ConvertQueryParam, colorBucket } from '@/utils';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { DotsHorizontalIcon, PlusCircledIcon, ReloadIcon } from '@radix-ui/react-icons';
+import { CalendarIcon, DotsHorizontalIcon, PlusCircledIcon, ReloadIcon } from '@radix-ui/react-icons';
 import {
     ColumnDef,
     ColumnFiltersState,
@@ -59,10 +65,12 @@ import {
     getSortedRowModel,
     useReactTable,
 } from '@tanstack/react-table';
+import { addMonths, format } from 'date-fns';
 import dayjs from 'dayjs';
 import { debounce } from 'lodash';
 import queryString from 'query-string';
 import * as React from 'react';
+import { DateRange } from 'react-day-picker';
 import { Resolver, SubmitHandler, useForm } from 'react-hook-form';
 import { useLocation, useNavigate } from 'react-router-dom';
 import * as yup from 'yup';
@@ -110,6 +118,29 @@ export const LeaveList = () => {
         debounce((value) => setQuery(value), 500),
         []
     );
+    const [date, setDate] = React.useState<DateRange | undefined>({
+        from: new Date(),
+        to: addMonths(new Date(), 1),
+    });
+    const handleExport2 = () => {
+        (async () => {
+            if (date && date.from && date.to) {
+                window.open(
+                    `${STATIC_HOST}leave/leave-infor?from=${format(
+                        date.from,
+                        'yyyy-MM-dd'
+                    )}&to=${format(date.to, 'yyyy-MM-dd')}`,
+                    '_blank',
+                    'noreferrer'
+                );
+            } else {
+                toast({
+                    variant: 'destructive',
+                    title: 'Yêu cầu chọn khoảng ngày',
+                });
+            }
+        })();
+    };
     const handleNavigateQuery = () => {
         const paramObject: QueryParam = {
             query: query,
@@ -501,6 +532,72 @@ export const LeaveList = () => {
                             api="leavetype"
                         />
                     )}
+                        <Dialog>
+                        <DialogTrigger asChild>
+                            <Button className="flex gap-3">
+                                <Icons.sheet /> Xuất dữ liệu 
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Chọn khoảng thời gian xuất dữ liệu</DialogTitle>
+                                <DialogDescription>
+                                    Nhập tháng và năm cần xuất dữ liệu
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <div className={cn('grid gap-2')}>
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    id="date"
+                                                    variant={'outline'}
+                                                    className={cn(
+                                                        'w-[300px] justify-start text-left font-normal',
+                                                        !date && 'text-muted-foreground'
+                                                    )}
+                                                >
+                                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                                    {date?.from ? (
+                                                        date.to ? (
+                                                            <>
+                                                                {format(date.from, 'LLL dd, y')} -{' '}
+                                                                {format(date.to, 'LLL dd, y')}
+                                                            </>
+                                                        ) : (
+                                                            format(date.from, 'LLL dd, y')
+                                                        )
+                                                    ) : (
+                                                        <span>Pick a date</span>
+                                                    )}
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-auto p-0" align="start">
+                                                <Calendar
+                                                    initialFocus
+                                                    mode="range"
+                                                    defaultMonth={date?.from}
+                                                    selected={date}
+                                                    onSelect={setDate}
+                                                    numberOfMonths={2}
+                                                />
+                                            </PopoverContent>
+                                        </Popover>
+                                    </div>
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <DialogClose asChild>
+                                    <Button variant="outline">Đóng</Button>
+                                </DialogClose>
+                                <Button onClick={handleExport2} className="flex gap-3">
+                                    <Icons.sheet />
+                                    Xuất dữ liệu 
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
                     <Dialog open={openCreateForm} onOpenChange={setOpenCreateForm}>
                         <DialogTrigger asChild>
                             <Button className="btn flex gap-2">

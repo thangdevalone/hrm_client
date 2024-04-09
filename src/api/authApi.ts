@@ -1,7 +1,6 @@
+import { NewPassForm } from '@/features/NewPass';
 import { ChangePass, LoginForm } from '@/models';
 import axiosClient from './axiosClient';
-import { useInfoUser } from '@/hooks';
-import { NewPassForm } from '@/features/NewPass';
 
 const authApi = {
     login(data: LoginForm) {

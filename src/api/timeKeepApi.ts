@@ -37,5 +37,9 @@ const timeKeepApi = {
         const url = `timesheet/registed-without-attendance${ConvertQueryParam(param)}`;
         return axiosClient.get(url);
     },
+    export2(param?:string){
+        const url = param?`timesheet/timesheet-infor${param}`:'timesheet/timesheet-infor'
+        return axiosClient.get(url)
+    }
 };
 export default timeKeepApi;

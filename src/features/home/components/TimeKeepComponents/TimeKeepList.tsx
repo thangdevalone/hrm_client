@@ -6,6 +6,7 @@ import { DataTablePagination, DataTableViewOptions } from '@/components/common';
 import { DataTableColumnHeader } from '@/components/common/DataTableColumnHeader';
 import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import {
     Dialog,
     DialogClose,
@@ -19,6 +20,7 @@ import {
 import { Form } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
     Select,
@@ -36,10 +38,11 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
+import { cn } from '@/lib/utils';
 import { InfoTimeKeep, ListResponse, QueryParam, RawTimeSheet } from '@/models';
-import { ConvertQueryParam, cryString } from '@/utils';
+import { ConvertQueryParam } from '@/utils';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { ReloadIcon } from '@radix-ui/react-icons';
+import { CalendarIcon, ReloadIcon } from '@radix-ui/react-icons';
 import {
     ColumnDef,
     ColumnFiltersState,
@@ -53,16 +56,18 @@ import {
     getSortedRowModel,
     useReactTable,
 } from '@tanstack/react-table';
-import { addDays, endOfMonth, format, startOfMonth } from 'date-fns';
+import { addDays, addMonths, endOfMonth, format, startOfMonth } from 'date-fns';
 import * as ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { debounce } from 'lodash';
 import queryString from 'query-string';
 import * as React from 'react';
+import { DateRange } from 'react-day-picker';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { useLocation, useNavigate } from 'react-router-dom';
 import * as yup from 'yup';
 import { DataSetter } from '../ScheduleComponents';
+import { STATIC_HOST } from '@/constants';
 interface FilterDateForm {
     dateRange?: string;
 }
@@ -108,6 +113,10 @@ export const TimeKeepList = () => {
         pageIndex: Number(param?.pageIndex || 1) - 1,
         pageSize: Number(param?.pageSize || 10),
     });
+    const [date, setDate] = React.useState<DateRange | undefined>({
+        from: new Date(),
+        to: addMonths(new Date(), 1),
+    });
     const [exportLoading, setExportLoading] = React.useState(false);
     const debouncedSetQuery = React.useCallback(
         debounce((value) => setQuery(value), 500),
@@ -140,6 +149,7 @@ export const TimeKeepList = () => {
         navigate({ search: newSearch });
         location.search = newSearch;
     };
+
     const columns: ColumnDef<InfoTimeKeep>[] = [
         {
             accessorKey: 'id',
@@ -309,6 +319,18 @@ export const TimeKeepList = () => {
                 console.log(error);
             } finally {
                 setLoadingTable(false);
+            }
+        })();
+    };
+    const handleExport2 = () => {
+        (async () => {
+            if (date && date.from && date.to) {
+                window.open(`${STATIC_HOST}timesheet/timesheet-infor?from=${format(date.from, 'yyyy-MM-dd')}&to=${format(date.to, 'yyyy-MM-dd')}`, "_blank", "noreferrer")
+            } else {
+                toast({
+                    variant: 'destructive',
+                    title: 'Yêu cầu chọn khoảng ngày',
+                });
             }
         })();
     };
@@ -552,7 +574,7 @@ export const TimeKeepList = () => {
                                 </DialogClose>
                                 <Button onClick={exportToExcel} className="flex gap-3">
                                     <Icons.sheet />
-                                    Xuất dữ liệu
+                                    Xuất dữ liệu 
                                 </Button>
                             </DialogFooter>
                         </DialogContent>
@@ -561,6 +583,78 @@ export const TimeKeepList = () => {
                         <Icons.wifi />
                         Đặt lại IP
                     </Button>
+
+                    <Dialog>
+                        <DialogTrigger asChild>
+                            <Button disabled={exportLoading} className="flex gap-3">
+                                {exportLoading ? (
+                                    <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Icons.sheet />
+                                )}{' '}
+                                Xuất dữ liệu 2
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Chọn khoảng thời gian xuất dữ liệu</DialogTitle>
+                                <DialogDescription>
+                                    Nhập tháng và năm cần xuất dữ liệu
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <div className={cn('grid gap-2')}>
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    id="date"
+                                                    variant={'outline'}
+                                                    className={cn(
+                                                        'w-[300px] justify-start text-left font-normal',
+                                                        !date && 'text-muted-foreground'
+                                                    )}
+                                                >
+                                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                                    {date?.from ? (
+                                                        date.to ? (
+                                                            <>
+                                                                {format(date.from, 'LLL dd, y')} -{' '}
+                                                                {format(date.to, 'LLL dd, y')}
+                                                            </>
+                                                        ) : (
+                                                            format(date.from, 'LLL dd, y')
+                                                        )
+                                                    ) : (
+                                                        <span>Pick a date</span>
+                                                    )}
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-auto p-0" align="start">
+                                                <Calendar
+                                                    initialFocus
+                                                    mode="range"
+                                                    defaultMonth={date?.from}
+                                                    selected={date}
+                                                    onSelect={setDate}
+                                                    numberOfMonths={2}
+                                                />
+                                            </PopoverContent>
+                                        </Popover>
+                                    </div>
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <DialogClose asChild>
+                                    <Button variant="outline">Đóng</Button>
+                                </DialogClose>
+                                <Button onClick={handleExport2} className="flex gap-3">
+                                    <Icons.sheet />
+                                    Xuất dữ liệu 2
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
                 </div>
                 <DataTableViewOptions table={table} />
             </div>

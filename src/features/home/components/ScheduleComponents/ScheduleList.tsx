@@ -1,14 +1,18 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import scheduleApi from '@/api/scheduleApi';
+import { Icons } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import {
     Dialog,
     DialogClose,
     DialogContent,
+    DialogDescription,
     DialogFooter,
     DialogHeader,
     DialogTitle,
+    DialogTrigger,
 } from '@/components/ui/dialog';
 import {
     DropdownMenu,
@@ -19,6 +23,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
     Select,
@@ -37,7 +42,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
-import { STATIC_HOST_NO_SPLASH } from '@/constants';
+import { STATIC_HOST, STATIC_HOST_NO_SPLASH } from '@/constants';
 import { cn } from '@/lib/utils';
 import {
     InfoConfigSchedule,
@@ -46,12 +51,12 @@ import {
     InfoWorkShift,
     ListResponse,
 } from '@/models';
-import { ChevronLeftIcon, ChevronRightIcon } from '@radix-ui/react-icons';
-import { format } from 'date-fns';
+import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, ReloadIcon } from '@radix-ui/react-icons';
+import { addMonths, format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import queryString from 'query-string';
 import * as React from 'react';
-import { DayContentProps, DayPicker } from 'react-day-picker';
+import { DateRange, DayContentProps, DayPicker } from 'react-day-picker';
 import { useLocation, useNavigate } from 'react-router-dom';
 export interface DataSetter {
     year: number;
@@ -95,7 +100,7 @@ export const ScheduleList = () => {
         navigate({ search: `?month=${dataSetter.month}&year=${dataSetter.year}&type=list` });
         location.search = `?month=${dataSetter.month}&year=${dataSetter.year}&type=list`;
         fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [dataSetter]);
 
     React.useEffect(() => {
@@ -126,6 +131,10 @@ export const ScheduleList = () => {
             console.log(error);
         }
     };
+    const [date, setDate] = React.useState<DateRange | undefined>({
+        from: new Date(),
+        to: addMonths(new Date(), 1),
+    });
     const [titleDialog, setTitleDialog] = React.useState<string>();
     const handleChecker = async (rawDate: Date, shift: string, date: string) => {
         setTitleDialog(`Thông tin ${shift} ngày ${format(rawDate, 'dd/MM/yyyy')}`);
@@ -134,6 +143,26 @@ export const ScheduleList = () => {
         )) as unknown as InfoScheduleAll[];
         setPeopleData(data);
         setOpen(true);
+    };
+    const { toast } = useToast();
+    const handleExport2 = () => {
+        (async () => {
+            if (date && date.from && date.to) {
+                window.open(
+                    `${STATIC_HOST}schedule/schedule-infor?from=${format(
+                        date.from,
+                        'yyyy-MM-dd'
+                    )}&to=${format(date.to, 'yyyy-MM-dd')}`,
+                    '_blank',
+                    'noreferrer'
+                );
+            } else {
+                toast({
+                    variant: 'destructive',
+                    title: 'Yêu cầu chọn khoảng ngày',
+                });
+            }
+        })();
     };
     React.useEffect(() => {
         const dateMap: Record<string, { [key: string]: number; total: number }> = {};
@@ -203,6 +232,75 @@ export const ScheduleList = () => {
                                 </SelectContent>
                             </Select>
                         </div>
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <Button className="flex gap-3">
+                                    <Icons.sheet /> Xuất dữ liệu
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Chọn khoảng thời gian xuất dữ liệu</DialogTitle>
+                                    <DialogDescription>
+                                        Nhập tháng và năm cần xuất dữ liệu
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <div className={cn('grid gap-2')}>
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                    <Button
+                                                        id="date"
+                                                        variant={'outline'}
+                                                        className={cn(
+                                                            'w-[300px] justify-start text-left font-normal',
+                                                            !date && 'text-muted-foreground'
+                                                        )}
+                                                    >
+                                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                                        {date?.from ? (
+                                                            date.to ? (
+                                                                <>
+                                                                    {format(date.from, 'LLL dd, y')}{' '}
+                                                                    - {format(date.to, 'LLL dd, y')}
+                                                                </>
+                                                            ) : (
+                                                                format(date.from, 'LLL dd, y')
+                                                            )
+                                                        ) : (
+                                                            <span>Pick a date</span>
+                                                        )}
+                                                    </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent
+                                                    className="w-auto p-0"
+                                                    align="start"
+                                                >
+                                                    <Calendar
+                                                        initialFocus
+                                                        mode="range"
+                                                        defaultMonth={date?.from}
+                                                        selected={date}
+                                                        onSelect={setDate}
+                                                        numberOfMonths={2}
+                                                    />
+                                                </PopoverContent>
+                                            </Popover>
+                                        </div>
+                                    </div>
+                                </div>
+                                <DialogFooter>
+                                    <DialogClose asChild>
+                                        <Button variant="outline">Đóng</Button>
+                                    </DialogClose>
+                                    <Button onClick={handleExport2} className="flex gap-3">
+                                        <Icons.sheet />
+                                        Xuất dữ liệu
+                                    </Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
                     </div>
                     <div>
                         {usingConfig && (
@@ -234,35 +332,43 @@ export const ScheduleList = () => {
                                             <TableHead>Email</TableHead>
                                             <TableHead>Phòng ban</TableHead>
                                             <TableHead>Ca đăng ký</TableHead>
-
                                         </TableRow>
                                     </TableHeader>
 
                                     <TableBody>
-                                        {peopleData ?
-                                            peopleData?.map((item) => (
-                                                <TableRow key={item.EmpID}>
-                                                    <TableCell>{item.EmpID}</TableCell>
-                                                    <TableCell>
-                                                        <div className="flex flex-row items-center gap-2">
-                                                            {' '}
-                                                            <img
-                                                                src={`${
-                                                                    STATIC_HOST_NO_SPLASH +
-                                                                    item.PhotoPath
-                                                                }`}
-                                                                alt="avatar"
-                                                                className=" w-8 h-8 border rounded-full"
-                                                            />
-                                                            <strong>{item.EmployeeName}</strong>
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell>{item.Email}</TableCell>
-                                                    <TableCell>{item.DepName}</TableCell>
-                                                    <TableCell><Badge  className='text-sm rounded-xl' style={{backgroundColor:`${item.WorkShiftDetail.Color}`}}>{item.WorkShiftDetail.WorkShiftName}</Badge></TableCell>
-
-                                                </TableRow>
-                                            )):"Không có dữ liệu"}
+                                        {peopleData
+                                            ? peopleData?.map((item) => (
+                                                  <TableRow key={item.EmpID}>
+                                                      <TableCell>{item.EmpID}</TableCell>
+                                                      <TableCell>
+                                                          <div className="flex flex-row items-center gap-2">
+                                                              {' '}
+                                                              <img
+                                                                  src={`${
+                                                                      STATIC_HOST_NO_SPLASH +
+                                                                      item.PhotoPath
+                                                                  }`}
+                                                                  alt="avatar"
+                                                                  className=" w-8 h-8 border rounded-full"
+                                                              />
+                                                              <strong>{item.EmployeeName}</strong>
+                                                          </div>
+                                                      </TableCell>
+                                                      <TableCell>{item.Email}</TableCell>
+                                                      <TableCell>{item.DepName}</TableCell>
+                                                      <TableCell>
+                                                          <Badge
+                                                              className="text-sm rounded-xl"
+                                                              style={{
+                                                                  backgroundColor: `${item.WorkShiftDetail.Color}`,
+                                                              }}
+                                                          >
+                                                              {item.WorkShiftDetail.WorkShiftName}
+                                                          </Badge>
+                                                      </TableCell>
+                                                  </TableRow>
+                                              ))
+                                            : 'Không có dữ liệu'}
                                     </TableBody>
                                 </ScrollArea>
                             </Table>
