@@ -19,7 +19,7 @@ import { STATIC_HOST_NO_SPLASH } from '@/constants';
 import { authActions } from '@/features/auth/AuthSlice';
 import { useInfoUser } from '@/hooks';
 import { EmployeeEditDetailForm, InforEmployee, InforUser } from '@/models';
-import { colorBucket } from '@/utils';
+import { colorBucket, PermissionProvider } from '@/utils';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { ReloadIcon } from '@radix-ui/react-icons';
 import dayjs from 'dayjs';
@@ -32,6 +32,7 @@ import * as yup from 'yup';
 export const EmployeeDetail = () => {
     const { idEmp } = useParams();
     const [info, setInfo] = useState<InforEmployee>();
+    const P = PermissionProvider();
     useEffect(() => {
         (async () => {
             try {
@@ -252,6 +253,7 @@ export const EmployeeDetail = () => {
                                             label="Vai trò"
                                             placeholder="Chọn vai trò"
                                             typeApi="role"
+                                            disabled={!P.IS_ADMIN}
                                             require={true}
                                         />
 

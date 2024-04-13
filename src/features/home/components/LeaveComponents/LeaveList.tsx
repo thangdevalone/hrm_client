@@ -834,12 +834,23 @@ export const LeaveList = () => {
                                             require={true}
                                         />
                                     </div>
-                                    {(user?.RoleName === 'Admin' || user?.RoleName === 'Hr') && (
+                                    {(user?.RoleName === 'Admin' ) && (
                                         <SelectionField
                                             name="LeaveStatus"
                                             label="Trạng thái"
                                             placeholder="Chọn trạng thái"
                                         >
+                                            <SelectItem value="Đã xác nhận">
+                                                <Badge
+                                                    className={`${
+                                                        colorBucket['Đã xác nhận']
+                                                    } hover:${
+                                                        colorBucket['Đã xác nhận']
+                                                    }`}
+                                                >
+                                                   Đã xác nhận
+                                                </Badge>
+                                            </SelectItem>
                                             <SelectItem value="Chờ xác nhận">
                                                 <Badge
                                                     className={`${
