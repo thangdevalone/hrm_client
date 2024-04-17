@@ -314,7 +314,7 @@ export const TimeKeepReg = () => {
                     <Table>
                         <TableHeader className="sticky top-0 z-[2] bg-[hsl(var(--background))]">
                             {table.getHeaderGroups().map((headerGroup: any) => (
-                                <TableRow className='cursor-pointer' key={headerGroup.id}>
+                                <TableRow key={headerGroup.id}>
                                     {headerGroup.headers.map((header: any) => {
                                         return (
                                             <TableHead key={header.id}>
