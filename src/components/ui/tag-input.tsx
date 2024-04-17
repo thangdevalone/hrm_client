@@ -82,7 +82,7 @@ const TagInput = React.forwardRef<HTMLInputElement, TagInputProps>(
             enableAutocomplete,
             autocompleteOptions,
             maxTags,
-            delimiter = Delimiter.Comma,
+            delimiter = Delimiter.Enter,
             onTagAdd,
             onTagRemove,
             allowDuplicates,
