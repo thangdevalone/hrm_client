@@ -1,4 +1,4 @@
-import { LeaveCreateForm, LeaveEditForm, LeaveTypeCreateForm, QueryParam } from '@/models';
+import { LeaveCreateForm, LeaveTypeCreateForm, QueryParam } from '@/models';
 import { ConvertQueryParam } from '@/utils';
 import axiosClient from './axiosClient';
 
@@ -24,16 +24,13 @@ const leaveApi = {
     },
     createLeave(data: LeaveCreateForm) {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const {leaveDate,...postData}=data
-
         const url = 'leave/create-leave';
-        return axiosClient.post(url, postData);
+        return axiosClient.post(url, data);
     },
-    editLeave(id:number,data: LeaveEditForm){
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const {LeaveRequestID,EmpID,RawDateStart,RawDateEnd,...postData}=data
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    editLeave(id:number,data: any){
         const url = `leave/update-leave/${id}`;
-        return axiosClient.patch(url, postData);
+        return axiosClient.patch(url, data);
     },
     createLeaveType(data: LeaveTypeCreateForm){
         const url = 'leavetype/create-leave-type';

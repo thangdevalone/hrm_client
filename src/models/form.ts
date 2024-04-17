@@ -72,21 +72,18 @@ export interface DepartmentEditForm {
 
 export interface LeaveCreateForm {
     LeaveTypeID: number;
-    LeaveStartDate?: string | null;
-    LeaveEndDate?: string | null;
+    LeaveStartDate: string ;
+    LeaveEndDate: string;
     Reason: string;
-    leaveDate: string;
 }
 export interface LeaveEditForm {
     LeaveTypeID: number;
-    LeaveStartDate?: string | null;
-    LeaveEndDate?: string | null;
-    leaveDate: string;
+    LeaveStartDate: string ;
+    LeaveEndDate: string ;
     Reason: string;
     EmpID: number;
     LeaveRequestID: number;
-    RawDateStart?: Date | null;
-    RawDateEnd?: Date | null;
+  
     LeaveStatus?: string | null;
 }
 

@@ -187,6 +187,8 @@ export interface InfoTimeKeep {
     RoleName: string;
     DepName: string;
     JobName: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    Tasks:any[];
 }
 export interface RawTimeSheet {
     EmpID: number;

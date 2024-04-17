@@ -2,10 +2,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import leaveApi from '@/api/leaveApi';
 import {
-    RangeCalendarField,
+    RangeCalendarTimeField,
     SearchField,
     SelectionField,
-    TextareaField,
+    TextareaField
 } from '@/components/FormControls';
 import { DataTablePagination, DataTableViewOptions } from '@/components/common';
 import { DataTableColumnHeader } from '@/components/common/DataTableColumnHeader';
@@ -49,9 +49,14 @@ import { STATIC_HOST } from '@/constants';
 import { useInfoUser } from '@/hooks';
 import { cn } from '@/lib/utils';
 import { InfoLeave, LeaveCreateForm, LeaveEditForm, ListResponse, QueryParam } from '@/models';
-import { ConvertQueryParam, colorBucket } from '@/utils';
+import { ConvertQueryParam, PermissionProvider, colorBucket } from '@/utils';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { CalendarIcon, DotsHorizontalIcon, PlusCircledIcon, ReloadIcon } from '@radix-ui/react-icons';
+import {
+    CalendarIcon,
+    DotsHorizontalIcon,
+    PlusCircledIcon,
+    ReloadIcon,
+} from '@radix-ui/react-icons';
 import {
     ColumnDef,
     ColumnFiltersState,
@@ -66,7 +71,6 @@ import {
     useReactTable,
 } from '@tanstack/react-table';
 import { addMonths, format } from 'date-fns';
-import dayjs from 'dayjs';
 import { debounce } from 'lodash';
 import queryString from 'query-string';
 import * as React from 'react';
@@ -154,6 +158,8 @@ export const LeaveList = () => {
         navigate({ search: newSearch });
         location.search = newSearch;
     };
+    const P = PermissionProvider();
+
     const columns: ColumnDef<InfoLeave>[] = [
         {
             id: 'select',
@@ -183,7 +189,7 @@ export const LeaveList = () => {
             header: ({ column }) => <DataTableColumnHeader column={column} title="Mã đơn" />,
             cell: ({ row }) => <div>{row.getValue('LeaveRequestID')}</div>,
         },
-  
+
         {
             accessorKey: 'EmpName',
             header: ({ column }) => <DataTableColumnHeader column={column} title="Tên nhân viên" />,
@@ -192,12 +198,16 @@ export const LeaveList = () => {
         {
             accessorKey: 'LeaveStartDate',
             header: ({ column }) => <DataTableColumnHeader column={column} title="Bắt đầu" />,
-            cell: ({ row }) => <div>{dayjs(row.getValue('LeaveStartDate')).format('DD/MM/YYYY')}</div>,
+            cell: ({ row }) => (
+                <div>{format(row.getValue('LeaveStartDate'),'dd/MM/yyyy HH:mm:ss')}</div>
+            ),
         },
         {
             accessorKey: 'LeaveEndDate',
             header: ({ column }) => <DataTableColumnHeader column={column} title="Kết thúc" />,
-            cell: ({ row }) => <div>{dayjs(row.getValue('LeaveEndDate')).format('DD/MM/YYYY')}</div>,
+            cell: ({ row }) => (
+                <div>{format(row.getValue('LeaveEndDate'),'dd/MM/yyyy HH:mm:ss')}</div>
+            ),
         },
         {
             accessorKey: 'LeaveTypeName',
@@ -241,12 +251,14 @@ export const LeaveList = () => {
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                                onClick={() => handleValueEdit(row.original)}
-                                className="cursor-pointer"
-                            >
-                                Chỉnh sửa
-                            </DropdownMenuItem>
+                            {P.IS_ADMIN_OR_HR && (
+                                <DropdownMenuItem
+                                    onClick={() => handleValueEdit(row.original)}
+                                    className="cursor-pointer"
+                                >
+                                    Chỉnh sửa
+                                </DropdownMenuItem>
+                            )}
 
                             <DropdownMenuItem
                                 onClick={() => {
@@ -265,22 +277,14 @@ export const LeaveList = () => {
     ];
 
     const handleValueEdit = (data: InfoLeave) => {
-        const startDate=dayjs(data.LeaveStartDate, 'YYYY-MM-DD').format('DD/MM/YYYY')
-        const endDate=dayjs(data.LeaveEndDate, 'YYYY-MM-DD').format('DD/MM/YYYY')
+       
         formEdit.setValue('EmpID', data.EmpID);
         formEdit.setValue('LeaveRequestID', data.LeaveRequestID);
-        formEdit.setValue('LeaveStartDate', startDate);
-        formEdit.setValue('LeaveEndDate', endDate);
-        formEdit.setValue(
-            'leaveDate',
-            `${startDate}-${endDate}`
-        );
-        formEdit.setValue('RawDateEnd',dayjs(data.LeaveEndDate).toDate())
-        formEdit.setValue('RawDateStart',dayjs(data.LeaveStartDate).toDate())
-
+        formEdit.setValue('LeaveStartDate', data.LeaveStartDate);
+        formEdit.setValue('LeaveEndDate', data.LeaveEndDate);
         formEdit.setValue('Reason', data.Reason);
         formEdit.setValue('LeaveTypeID', data.LeaveTypeID);
-        formEdit.setValue('LeaveStatus',data.LeaveStatus)
+        formEdit.setValue('LeaveStatus', data.LeaveStatus);
         setOpenEditForm(true);
     };
     React.useEffect(() => {
@@ -336,65 +340,23 @@ export const LeaveList = () => {
     };
     const schema_create = yup.object().shape({
         LeaveTypeID: yup.number().required('Cần chọn loại nghỉ'),
-        LeaveStartDate: yup.string().notRequired(),
-        LeaveEndDate: yup.string().notRequired(),
-        leaveDate: yup
-            .string()
-            .required('Cần nhập ngày nghỉ phép')
-            .test('Check-end-date', 'Cần đủ ngày bắt đầu và ngày kết thúc', (value) => {
-                const [startDate, endDate] = value.split('-');
-                if (startDate && endDate) {
-                    return true;
-                }
-                if (startDate && !endDate) {
-                    return new yup.ValidationError('Cần chọn ngày kết thúc', null, 'leaveDate');
-                }
-                if (!startDate && endDate) {
-                    return new yup.ValidationError('Cần chọn ngày bắt đầu', null, 'leaveDate');
-                }
-                return new yup.ValidationError(
-                    'Cần đủ ngày bắt đầu và ngày kết thúc',
-                    null,
-                    'leaveDate'
-                );
-            }),
+        LeaveStartDate: yup.string().required('Cần nhập ngày bắt đầu'),
+        LeaveEndDate: yup.string().required('Cần nhập ngày kết thúc'),
         Reason: yup.string().required('Cần nhập lý do nghỉ'),
     });
     const formCreate = useForm<LeaveCreateForm>({
         resolver: yupResolver(schema_create) as Resolver<LeaveCreateForm, any>,
     });
     const schema_edit = yup.object().shape({
-        LeaveTypeID: yup.number().required('Cần chọn loại nghỉ'),
-        LeaveStartDate: yup.string().notRequired(),
-        LeaveEndDate: yup.string().notRequired(),
-        leaveDate: yup
-            .string()
-            .required('Cần nhập ngày nghỉ phép')
-            .test('Check-end-date', 'Cần đủ ngày bắt đầu và ngày kết thúc', (value) => {
-                const [startDate, endDate] = value.split('-');
-                if (startDate && endDate) {
-                    return true;
-                }
-                if (startDate && !endDate) {
-                    return new yup.ValidationError('Cần chọn ngày kết thúc', null, 'leaveDate');
-                }
-                if (!startDate && endDate) {
-                    return new yup.ValidationError('Cần chọn ngày bắt đầu', null, 'leaveDate');
-                }
-                return new yup.ValidationError(
-                    'Cần đủ ngày bắt đầu và ngày kết thúc',
-                    null,
-                    'leaveDate'
-                );
-            }),
-        Reason: yup.string().required('Cần nhập lý do nghỉ'),
-        EmpID: yup.number().required('Mã nhân viên'),
+        LeaveTypeID: yup.number(),
+        LeaveStartDate: yup.string(),
+        LeaveEndDate: yup.string(),
+        Reason: yup.string(),
+        EmpID: yup.number(),
         LeaveRequestID: yup.number().required('Mã đơn nghỉ phép'),
-        RawDateStart:yup.date().notRequired(),
-        RawDateEnd:yup.date().notRequired(), 
         LeaveStatus: yup.string().notRequired(),
     });
-    
+
     const formEdit = useForm<LeaveEditForm>({
         resolver: yupResolver(schema_edit) as Resolver<LeaveEditForm, any>,
     });
@@ -402,9 +364,9 @@ export const LeaveList = () => {
         (async () => {
             try {
                 if (data?.LeaveRequestID !== undefined) {
-                    const [startDate, endDate] = data.leaveDate.split('-');
-                    const newData = { LeaveStartDate: startDate, LeaveEndDate: endDate, ...data };
-                    await leaveApi.editLeave(newData.LeaveRequestID,newData);
+                    console.log(data);
+            
+                    await leaveApi.editLeave(data.LeaveRequestID, {LeaveStatus:data.LeaveStatus});
                     fetchData();
                     setOpenEditForm(false);
                     toast({
@@ -428,8 +390,12 @@ export const LeaveList = () => {
         (async () => {
             try {
                 setLoading(true);
-                const [startDate, endDate] = data.leaveDate.split('-');
-                const newData = { LeaveStartDate: startDate, LeaveEndDate: endDate, ...data };
+                // const [startDate, endDate] = data.leaveDate.split('-');
+                const newData = {
+                    ...data,
+                    LeaveStartDate: format(data.LeaveStartDate, 'dd/MM/yyyy HH:mm:ss'),
+                    LeaveEndDate: format(data.LeaveEndDate, 'dd/MM/yyyy HH:mm:ss'),
+                };
                 await leaveApi.createLeave(newData);
                 fetchData();
                 formCreate.reset();
@@ -532,72 +498,77 @@ export const LeaveList = () => {
                             api="leavetype"
                         />
                     )}
+                    {P.IS_ADMIN_OR_HR && (
                         <Dialog>
-                        <DialogTrigger asChild>
-                            <Button className="flex gap-3">
-                                <Icons.sheet /> Xuất dữ liệu 
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Chọn khoảng thời gian xuất dữ liệu</DialogTitle>
-                                <DialogDescription>
-                                    Nhập tháng và năm cần xuất dữ liệu
-                                </DialogDescription>
-                            </DialogHeader>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <div className={cn('grid gap-2')}>
-                                        <Popover>
-                                            <PopoverTrigger asChild>
-                                                <Button
-                                                    id="date"
-                                                    variant={'outline'}
-                                                    className={cn(
-                                                        'w-[300px] justify-start text-left font-normal',
-                                                        !date && 'text-muted-foreground'
-                                                    )}
-                                                >
-                                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                                    {date?.from ? (
-                                                        date.to ? (
-                                                            <>
-                                                                {format(date.from, 'LLL dd, y')} -{' '}
-                                                                {format(date.to, 'LLL dd, y')}
-                                                            </>
+                            <DialogTrigger asChild>
+                                <Button className="flex gap-3">
+                                    <Icons.sheet /> Xuất dữ liệu
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Chọn khoảng thời gian xuất dữ liệu</DialogTitle>
+                                    <DialogDescription>
+                                        Nhập tháng và năm cần xuất dữ liệu
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <div className={cn('grid gap-2')}>
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                    <Button
+                                                        id="date"
+                                                        variant={'outline'}
+                                                        className={cn(
+                                                            'w-[300px] justify-start text-left font-normal',
+                                                            !date && 'text-muted-foreground'
+                                                        )}
+                                                    >
+                                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                                        {date?.from ? (
+                                                            date.to ? (
+                                                                <>
+                                                                    {format(date.from, 'LLL dd, y')}{' '}
+                                                                    - {format(date.to, 'LLL dd, y')}
+                                                                </>
+                                                            ) : (
+                                                                format(date.from, 'LLL dd, y')
+                                                            )
                                                         ) : (
-                                                            format(date.from, 'LLL dd, y')
-                                                        )
-                                                    ) : (
-                                                        <span>Pick a date</span>
-                                                    )}
-                                                </Button>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0" align="start">
-                                                <Calendar
-                                                    initialFocus
-                                                    mode="range"
-                                                    defaultMonth={date?.from}
-                                                    selected={date}
-                                                    onSelect={setDate}
-                                                    numberOfMonths={2}
-                                                />
-                                            </PopoverContent>
-                                        </Popover>
+                                                            <span>Pick a date</span>
+                                                        )}
+                                                    </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent
+                                                    className="w-auto p-0"
+                                                    align="start"
+                                                >
+                                                    <Calendar
+                                                        initialFocus
+                                                        mode="range"
+                                                        defaultMonth={date?.from}
+                                                        selected={date}
+                                                        onSelect={setDate}
+                                                        numberOfMonths={2}
+                                                    />
+                                                </PopoverContent>
+                                            </Popover>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <DialogFooter>
-                                <DialogClose asChild>
-                                    <Button variant="outline">Đóng</Button>
-                                </DialogClose>
-                                <Button onClick={handleExport2} className="flex gap-3">
-                                    <Icons.sheet />
-                                    Xuất dữ liệu 
-                                </Button>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
+                                <DialogFooter>
+                                    <DialogClose asChild>
+                                        <Button variant="outline">Đóng</Button>
+                                    </DialogClose>
+                                    <Button onClick={handleExport2} className="flex gap-3">
+                                        <Icons.sheet />
+                                        Xuất dữ liệu
+                                    </Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
+                    )}
                     <Dialog open={openCreateForm} onOpenChange={setOpenCreateForm}>
                         <DialogTrigger asChild>
                             <Button className="btn flex gap-2">
@@ -621,9 +592,16 @@ export const LeaveList = () => {
                                             typeApi="leavetype"
                                             require={true}
                                         />
-                                        <RangeCalendarField
-                                            name="leaveDate"
-                                            label="Ngày nghỉ phép"
+                                        <div></div>
+                                        <RangeCalendarTimeField
+                                            name="LeaveStartDate"
+                                            label="Ngày bắt đầu"
+                                            placeholder="Chọn ngày nghỉ phép"
+                                            require={true}
+                                        />
+                                        <RangeCalendarTimeField
+                                            name="LeaveEndDate"
+                                            label="Ngày kết thúc"
                                             placeholder="Chọn ngày nghỉ phép"
                                             require={true}
                                         />
@@ -805,13 +783,14 @@ export const LeaveList = () => {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-            <Dialog open={openEditForm} onOpenChange={setOpenEditForm}>
-                <DialogContent>
-                    <DialogHeader className="">
-                        <DialogTitle>Chỉnh sửa đơn nghỉ phép</DialogTitle>
-                    </DialogHeader>
-                    <Form {...formEdit}>
-                        <form onSubmit={formEdit.handleSubmit(handleEdit)}>
+            {P.IS_ADMIN_OR_HR && (
+                <Dialog open={openEditForm} onOpenChange={setOpenEditForm}>
+                    <DialogContent>
+                        <DialogHeader className="">
+                            <DialogTitle>Chỉnh sửa đơn nghỉ phép</DialogTitle>
+                        </DialogHeader>
+                        <Form {...formEdit}>
+                            <form onSubmit={formEdit.handleSubmit(handleEdit)}>
                                 <div className="grid grid-cols-2 gap-3 mx-1 mb-3">
                                     <SearchField
                                         name="LeaveTypeID"
@@ -819,12 +798,24 @@ export const LeaveList = () => {
                                         placeholder="Chọn loại nghỉ phép"
                                         typeApi="leavetype"
                                         require={true}
+                                        disabled={true}
+
                                     />
-                                    <RangeCalendarField
-                                        name="leaveDate"
-                                        label="Ngày nghỉ phép"
+                                    <div></div>
+                                    <RangeCalendarTimeField
+                                        name="LeaveStartDate"
+                                        label="Ngày bắt đầu"
                                         placeholder="Chọn ngày nghỉ phép"
                                         require={true}
+                                        disabled={true}
+                                    />
+                                    <RangeCalendarTimeField
+                                        name="LeaveEndDate"
+                                        label="Ngày kết thúc"
+                                        placeholder="Chọn ngày nghỉ phép"
+                                        require={true}
+                                        disabled={true}
+                                        
                                     />
                                     <div className="col-span-2">
                                         <TextareaField
@@ -832,56 +823,42 @@ export const LeaveList = () => {
                                             label="Lý do"
                                             placeholder="Nhập lý do xin nghỉ"
                                             require={true}
+                                            disabled={true}
+
                                         />
                                     </div>
-                                    {(user?.RoleName === 'Admin' ) && (
+                                    {user?.RoleName === 'Admin' && (
                                         <SelectionField
                                             name="LeaveStatus"
                                             label="Trạng thái"
                                             placeholder="Chọn trạng thái"
                                         >
-                                            <SelectItem value="Đã xác nhận">
+                                            <SelectItem value="Đã phê duyệt">
                                                 <Badge
-                                                    className={`${
-                                                        colorBucket['Đã xác nhận']
-                                                    } hover:${
-                                                        colorBucket['Đã xác nhận']
-                                                    }`}
+                                                    className={`${colorBucket['Đã phê duyệt']} hover:${colorBucket['Đã phê duyệt']}`}
                                                 >
-                                                   Đã xác nhận
+                                                    Đã phê duyệt
                                                 </Badge>
                                             </SelectItem>
                                             <SelectItem value="Chờ xác nhận">
                                                 <Badge
-                                                    className={`${
-                                                        colorBucket['Chờ xác nhận']
-                                                    } hover:${
-                                                        colorBucket['Chờ xác nhận']
-                                                    }`}
+                                                    className={`${colorBucket['Chờ xác nhận']} hover:${colorBucket['Chờ xác nhận']}`}
                                                 >
                                                    Chờ xác nhận
                                                 </Badge>
                                             </SelectItem>
                                             <SelectItem value="Chờ phê duyệt">
                                                 <Badge
-                                                    className={`${
-                                                        colorBucket['Chờ phê duyệt']
-                                                    } hover:${
-                                                        colorBucket['Chờ phê duyệt']
-                                                    }`}
+                                                    className={`${colorBucket['Chờ phê duyệt']} hover:${colorBucket['Chờ phê duyệt']}`}
                                                 >
-                                                   Chờ phê duyệt
+                                                    Chờ phê duyệt
                                                 </Badge>
                                             </SelectItem>
                                             <SelectItem value="Đã từ chối">
                                                 <Badge
-                                                    className={`${
-                                                        colorBucket['Đã từ chối']
-                                                    } hover:${
-                                                        colorBucket['Đã từ chối']
-                                                    }`}
+                                                    className={`${colorBucket['Đã từ chối']} hover:${colorBucket['Đã từ chối']}`}
                                                 >
-                                                   Đã từ chối
+                                                    Đã từ chối
                                                 </Badge>
                                             </SelectItem>
                                         </SelectionField>
@@ -894,52 +871,45 @@ export const LeaveList = () => {
                                         >
                                             <SelectItem value="Chờ phê duyệt">
                                                 <Badge
-                                                    className={`${
-                                                        colorBucket['Chờ phê duyệt']
-                                                    } hover:${
-                                                        colorBucket['Chờ phê duyệt']
-                                                    }`}
+                                                    className={`${colorBucket['Chờ phê duyệt']} hover:${colorBucket['Chờ phê duyệt']}`}
                                                 >
-                                                   Chờ xác nhận
+                                                    Chờ xác nhận
                                                 </Badge>
                                             </SelectItem>
                                             <SelectItem value="Đã từ chối">
                                                 <Badge
-                                                    className={`${
-                                                        colorBucket['Đã từ chối']
-                                                    } hover:${
-                                                        colorBucket['Đã từ chối']
-                                                    }`}
+                                                    className={`${colorBucket['Đã từ chối']} hover:${colorBucket['Đã từ chối']}`}
                                                 >
-                                                   Đã từ chối
+                                                    Đã từ chối
                                                 </Badge>
                                             </SelectItem>
                                         </SelectionField>
                                     )}
                                 </div>
-                            <DialogFooter className="w-full sticky mt-4">
-                                <DialogClose asChild>
-                                    <Button
-                                        onClick={() => {
-                                            setOpenEditForm(false);
-                                        }}
-                                        type="button"
-                                        variant="outline"
-                                    >
-                                        Hủy
+                                <DialogFooter className="w-full sticky mt-4">
+                                    <DialogClose asChild>
+                                        <Button
+                                            onClick={() => {
+                                                setOpenEditForm(false);
+                                            }}
+                                            type="button"
+                                            variant="outline"
+                                        >
+                                            Hủy
+                                        </Button>
+                                    </DialogClose>
+                                    <Button type="submit" disabled={loading}>
+                                        {loading && (
+                                            <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
+                                        )}{' '}
+                                        Lưu
                                     </Button>
-                                </DialogClose>
-                                <Button type="submit" disabled={loading}>
-                                    {loading && (
-                                        <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />
-                                    )}{' '}
-                                    Lưu
-                                </Button>
-                            </DialogFooter>
-                        </form>
-                    </Form>
-                </DialogContent>
-            </Dialog>
+                                </DialogFooter>
+                            </form>
+                        </Form>
+                    </DialogContent>
+                </Dialog>
+            )}
             <DataTablePagination table={table} totalRow={totalRow || 0} />
         </div>
     );

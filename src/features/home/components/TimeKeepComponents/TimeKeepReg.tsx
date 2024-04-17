@@ -4,6 +4,15 @@ import timeKeepApi from '@/api/timeKeepApi';
 import { DataTablePagination, DataTableViewOptions } from '@/components/common';
 import { DataTableColumnHeader } from '@/components/common/DataTableColumnHeader';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
     Table,
@@ -13,12 +22,9 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { Tag, TagInput } from '@/components/ui/tag-input';
 import { useToast } from '@/components/ui/use-toast';
-import {
-    InfoTimeKeep,
-    ListResponse,
-    QueryParam
-} from '@/models';
+import { InfoTimeKeep, ListResponse, QueryParam } from '@/models';
 import { ConvertQueryParam } from '@/utils';
 import { ReloadIcon } from '@radix-ui/react-icons';
 import {
@@ -54,12 +60,11 @@ export const TimeKeepReg = () => {
     const [rowSelection, setRowSelection] = React.useState({});
     const { toast } = useToast();
     const [sorting, setSorting] = React.useState<SortingState>([{ id: 'id', desc: true }]);
-
+    const [dataTask, setDataTask] = React.useState<InfoTimeKeep>();
     const [pagination, setPagination] = React.useState<PaginationState>({
         pageIndex: Number(param?.pageIndex || 1) - 1,
         pageSize: Number(param?.pageSize || 10),
     });
-
 
     const handleNavigateQuery = () => {
         const paramObject: QueryParam = {
@@ -77,7 +82,7 @@ export const TimeKeepReg = () => {
         {
             accessorKey: 'id',
             header: ({ column }) => <DataTableColumnHeader column={column} title="Mã chấm công" />,
-            cell: ({ row }) => <div className='ml-2'>{row.getValue('id')}</div>,
+            cell: ({ row }) => <div className="ml-2">{row.getValue('id')}</div>,
         },
         {
             accessorKey: 'TimeIn',
@@ -87,23 +92,34 @@ export const TimeKeepReg = () => {
         {
             accessorKey: 'TimeOut',
             header: ({ column }) => <DataTableColumnHeader column={column} title="Giờ về" />,
-            cell: ({ row }) => <div>{row.getValue('TimeOut')?format(row.getValue('TimeOut'), 'dd/MM/yyyy hh:mm:ss'):"Chưa check out"}</div>,
+            cell: ({ row }) => (
+                <div>
+                    {row.getValue('TimeOut')
+                        ? format(row.getValue('TimeOut'), 'dd/MM/yyyy hh:mm:ss')
+                        : 'Chưa check out'}
+                </div>
+            ),
         },
         {
             accessorKey: 'Late',
             header: ({ column }) => <DataTableColumnHeader column={column} title="Số giờ muộn" />,
-            cell: ({ row }) => <div>{row.getValue('Late')||0}</div>,
+            cell: ({ row }) => <div>{row.getValue('Late') || 0}</div>,
         },
         {
             accessorKey: 'WorkHour',
             header: ({ column }) => <DataTableColumnHeader column={column} title="Số giờ làm" />,
-            cell: ({ row }) => <div>{row.getValue('WorkHour')||0}</div>,
+            cell: ({ row }) => <div>{row.getValue('WorkHour') || 0}</div>,
+        },
+        {
+            accessorKey: 'Tasks',
+            header: ({ column }) => <DataTableColumnHeader column={column} title="Công việc" />,
+            cell: ({ row }) => <div>{(row.getValue('Tasks') as any[])?.length}</div>,
         },
     ];
     const fetchData = async () => {
         try {
             setLoadingTable(true);
-            
+
             const parsed = queryString.parse(
                 location.search ? location.search : '?pageIndex=1&pageSize=10&query='
             ) as unknown as QueryParam;
@@ -149,44 +165,147 @@ export const TimeKeepReg = () => {
             rowSelection,
         },
     });
-    const handleCheckIn= async()=>{
+    const [tags, setTags] = React.useState<Tag[]>([]);
+    const [openCheckin, setOpenCheckin] = React.useState(false);
+    const [openTask, setOpenTask] = React.useState(false);
+    const [userTasks, setUserTasks] = React.useState<Tag[]>([]);
+
+    const handleCheckIn = async () => {
         try {
-            await timeKeepApi.checkin()
+            const maptag = tags.map((item) => item.text);
+            await timeKeepApi.checkin(maptag);
+            setTags([]);
             toast({
-                title:"Check in thành công!"
-            })
+                title: 'Check in thành công!',
+            });
+            setOpenCheckin(false);
             fetchData();
         } catch (error) {
-            console.log(error)
+            console.log(error);
             toast({
-                variant:"destructive",
-                title:"Check in thất bại!",
-                description:error.error
-            })
+                variant: 'destructive',
+                title: 'Check in thất bại!',
+                description: error.error,
+            });
         }
-    }
-    const handleCheckOut= async()=>{
+    };
+    const handleCheckOut = async () => {
         try {
-            await timeKeepApi.checkout()
+            const data = {
+                task_updates: userTasks
+                    .filter((item) => item.old === true)
+                    .map((item) => ({ id: item.id, is_complete: item.is_complete })),
+                new_tasks: userTasks.filter((item) => item.old === false).map((item) => item.text),
+            };
+            await timeKeepApi.checkout(data);
+            setOpenTask(false);
             toast({
-                title:"Check out thành công!"
-            })
+                title: 'Check out thành công!',
+            });
             fetchData();
         } catch (error) {
-            console.log(error)
             toast({
-                variant:"destructive",
-                title:"Check in thất bại!",
-                description:error.error
-            })
+                variant: 'destructive',
+                title: 'Check out thất bại!',
+                description: error.error,
+            });
         }
-    }
+    };
+
     return (
         <div className="w-full space-y-4">
+            <Dialog open={openTask} onOpenChange={setOpenTask}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Task của {dataTask?.EmpName}</DialogTitle>
+                        <DialogDescription>
+                            Tạo các công việc làm trong ngày bằng cách nhập rồi ấn enter để tạo
+                        </DialogDescription>
+                    </DialogHeader>
+                    <TagInput
+                        placeholder="Enter a task"
+                        tags={userTasks}
+                        autoFocus={true}
+                        is_checkin={false}
+                        className="sm:min-w-[450px]"
+                        setTags={(newTags) => {
+                            setUserTasks(newTags);
+                        }}
+                        disabled={
+                            dataTask
+                                ? format(dataTask?.TimeIn, 'dd/MM/yyyy') !==
+                                  format(new Date(), 'dd/MM/yyyy')
+                                : false
+                        }
+                    />
+                    <DialogFooter>
+                        <Button
+                            disabled={
+                                dataTask
+                                    ? format(dataTask?.TimeIn, 'dd/MM/yyyy') !==
+                                      format(new Date(), 'dd/MM/yyyy')
+                                    : false
+                            }
+                            onClick={() => handleCheckOut()}
+                            className="w-full"
+                        >
+                            Checkout now
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             <div className="flex items-center">
                 <div className="flex flex-row gap-4">
-                    <Button onClick={()=>handleCheckIn()}>Check in</Button>
-                    <Button onClick={()=>handleCheckOut()}>Check out</Button>
+                    <Dialog open={openCheckin} onOpenChange={setOpenCheckin}>
+                        <DialogTrigger asChild>
+                            <Button>Check in</Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Check in with work?</DialogTitle>
+                                <DialogDescription>
+                                    Tạo các công việc làm trong ngày bằng cách nhập rồi ấn enter để
+                                    tạo
+                                </DialogDescription>
+                            </DialogHeader>
+                            <TagInput
+                                placeholder="Enter a task"
+                                tags={tags}
+                                is_checkin={true}
+                                className="sm:min-w-[450px]"
+                                setTags={(newTags) => {
+                                    setTags(newTags);
+                                }}
+                            />
+                            <DialogFooter>
+                                <Button onClick={() => handleCheckIn()} className="w-full">
+                                    Checkin now
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+
+                    <Button
+                        onClick={() => {
+                            (async () => {
+                                const res = await timeKeepApi.getTaskToday();
+                         
+                                setDataTask(res.data.data[0]);
+                                const tagCv = res.data.data[0].Tasks.map((item:any) => ({
+                                    id: item.id,
+                                    text: item.WorkPlan,
+                                    is_complete: item.IsComplete,
+                                    old: true,
+                                }));
+                                setUserTasks(tagCv);
+
+                                setOpenTask(true);
+                            })();
+                        }}
+                    >
+                        Check out
+                    </Button>
                 </div>
                 <DataTableViewOptions table={table} />
             </div>
@@ -218,6 +337,17 @@ export const TimeKeepReg = () => {
                                         <TableRow
                                             key={row.id}
                                             data-state={row.getIsSelected() && 'selected'}
+                                            onClick={() => {
+                                                setDataTask(row.original);
+                                                const tagCv = row.original.Tasks.map((item) => ({
+                                                    id: item.id,
+                                                    text: item.WorkPlan,
+                                                    is_complete: item.IsComplete,
+                                                    old: true,
+                                                }));
+                                                setUserTasks(tagCv);
+                                                setOpenTask(true);
+                                            }}
                                         >
                                             {row.getVisibleCells().map((cell) => (
                                                 <TableCell key={cell.id}>

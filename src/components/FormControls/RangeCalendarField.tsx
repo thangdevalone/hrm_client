@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { cn } from '@/lib/utils';
 import { CalendarIcon } from '@radix-ui/react-icons';
-import { format } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import React, { useEffect } from 'react';
 import { DateRange } from 'react-day-picker';
 import { useFormContext } from 'react-hook-form';
@@ -41,6 +41,7 @@ export const RangeCalendarField = (props: RangeCalendarFieldProps) => {
                 to: form.getValues('RawDateEnd'),
             });
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
     return (
         <FormField
@@ -102,7 +103,7 @@ export const RangeCalendarField = (props: RangeCalendarFieldProps) => {
                                         : '';
                                     form.setValue(`${name}`, valueStringDate);
                                 }}
-                                disabled={(date: any) => (disableDate ? date < new Date() : false)}
+                                disabled={(date: any) => (disableDate ? date < subDays(new Date(), 1) : false)}
                                 initialFocus
                             />
                         </PopoverContent>
