@@ -68,6 +68,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import * as yup from 'yup';
 import { DataSetter } from '../ScheduleComponents';
 import { STATIC_HOST } from '@/constants';
+import { Tag, TagInput } from '@/components/ui/tag-input';
 interface FilterDateForm {
     dateRange?: string;
 }
@@ -108,6 +109,10 @@ export const TimeKeepList = () => {
     const [rowSelection, setRowSelection] = React.useState({});
     const { toast } = useToast();
     const [filterDate, setFilterDate] = React.useState<FilterDate | undefined>();
+    const [dataTask, setDataTask] = React.useState<InfoTimeKeep>();
+    const [userTasks, setUserTasks] = React.useState<Tag[]>([]);
+    const [openTask, setOpenTask] = React.useState(false);
+
     const [sorting, setSorting] = React.useState<SortingState>([{ id: 'id', desc: true }]);
     const [pagination, setPagination] = React.useState<PaginationState>({
         pageIndex: Number(param?.pageIndex || 1) - 1,
@@ -191,6 +196,11 @@ export const TimeKeepList = () => {
             accessorKey: 'WorkHour',
             header: ({ column }) => <DataTableColumnHeader column={column} title="Số giờ làm" />,
             cell: ({ row }) => <div>{(row.getValue('WorkHour') || 0) + ' Giờ'}</div>,
+        },
+        {
+            accessorKey: 'Tasks',
+            header: ({ column }) => <DataTableColumnHeader column={column} title="Công việc" />,
+            cell: ({ row }) => <div>{(row.getValue('Tasks') as any[])?.length}</div>,
         },
     ];
     const fetchData = async () => {
@@ -482,6 +492,33 @@ export const TimeKeepList = () => {
     };
     return (
         <div className="w-full space-y-4">
+              <Dialog open={openTask} onOpenChange={setOpenTask}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Task của {dataTask?.EmpName}</DialogTitle>
+                        <DialogDescription>
+                            Tạo các công việc làm trong ngày bằng cách nhập rồi ấn enter để tạo
+                        </DialogDescription>
+                    </DialogHeader>
+                    <TagInput
+                        placeholder="Enter a task"
+                        tags={userTasks}
+                        autoFocus={true}
+                        is_checkin={false}
+                        className="sm:min-w-[450px]"
+                        setTags={(newTags) => {
+                            setUserTasks(newTags);
+                        }}
+                        disabled={
+                            dataTask
+                                ? format(dataTask?.TimeIn, 'dd/MM/yyyy') !==
+                                  format(new Date(), 'dd/MM/yyyy')
+                                : false
+                        }
+                    />
+                    
+                </DialogContent>
+            </Dialog>
             <div className="flex items-center">
                 <div className="flex flex-row gap-4">
                     <Input
@@ -686,6 +723,17 @@ export const TimeKeepList = () => {
                                         <TableRow
                                             key={row.id}
                                             data-state={row.getIsSelected() && 'selected'}
+                                            onClick={() => {
+                                                setDataTask(row.original);
+                                                const tagCv = row.original.Tasks.map((item) => ({
+                                                    id: item.id,
+                                                    text: item.WorkPlan,
+                                                    is_complete: item.IsComplete,
+                                                    old: true,
+                                                }));
+                                                setUserTasks(tagCv);
+                                                setOpenTask(true);
+                                            }}
                                         >
                                             {row.getVisibleCells().map((cell) => (
                                                 <TableCell key={cell.id}>
