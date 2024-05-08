@@ -5,7 +5,7 @@ import {
     RangeCalendarTimeField,
     SearchField,
     SelectionField,
-    TextareaField
+    TextareaField,
 } from '@/components/FormControls';
 import { DataTablePagination, DataTableViewOptions } from '@/components/common';
 import { DataTableColumnHeader } from '@/components/common/DataTableColumnHeader';
@@ -46,6 +46,7 @@ import {
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
 import { STATIC_HOST } from '@/constants';
+import StorageKeys from '@/constants/storage-keys';
 import { useInfoUser } from '@/hooks';
 import { cn } from '@/lib/utils';
 import { InfoLeave, LeaveCreateForm, LeaveEditForm, ListResponse, QueryParam } from '@/models';
@@ -126,6 +127,7 @@ export const LeaveList = () => {
         from: new Date(),
         to: addMonths(new Date(), 1),
     });
+    const token = localStorage.getItem(StorageKeys.TOKEN);
     const handleExport2 = () => {
         (async () => {
             if (date && date.from && date.to) {
@@ -133,7 +135,7 @@ export const LeaveList = () => {
                     `${STATIC_HOST}leave/leave-infor?from=${format(
                         date.from,
                         'yyyy-MM-dd'
-                    )}&to=${format(date.to, 'yyyy-MM-dd')}`,
+                    )}&to=${format(date.to, 'yyyy-MM-dd')}&token=${token}`,
                     '_blank',
                     'noreferrer'
                 );
@@ -199,14 +201,14 @@ export const LeaveList = () => {
             accessorKey: 'LeaveStartDate',
             header: ({ column }) => <DataTableColumnHeader column={column} title="Bắt đầu" />,
             cell: ({ row }) => (
-                <div>{format(row.getValue('LeaveStartDate'),'dd/MM/yyyy HH:mm:ss')}</div>
+                <div>{format(row.getValue('LeaveStartDate'), 'dd/MM/yyyy HH:mm:ss')}</div>
             ),
         },
         {
             accessorKey: 'LeaveEndDate',
             header: ({ column }) => <DataTableColumnHeader column={column} title="Kết thúc" />,
             cell: ({ row }) => (
-                <div>{format(row.getValue('LeaveEndDate'),'dd/MM/yyyy HH:mm:ss')}</div>
+                <div>{format(row.getValue('LeaveEndDate'), 'dd/MM/yyyy HH:mm:ss')}</div>
             ),
         },
         {
@@ -277,7 +279,6 @@ export const LeaveList = () => {
     ];
 
     const handleValueEdit = (data: InfoLeave) => {
-       
         formEdit.setValue('EmpID', data.EmpID);
         formEdit.setValue('LeaveRequestID', data.LeaveRequestID);
         formEdit.setValue('LeaveStartDate', data.LeaveStartDate);
@@ -365,8 +366,10 @@ export const LeaveList = () => {
             try {
                 if (data?.LeaveRequestID !== undefined) {
                     console.log(data);
-            
-                    await leaveApi.editLeave(data.LeaveRequestID, {LeaveStatus:data.LeaveStatus});
+
+                    await leaveApi.editLeave(data.LeaveRequestID, {
+                        LeaveStatus: data.LeaveStatus,
+                    });
                     fetchData();
                     setOpenEditForm(false);
                     toast({
@@ -799,7 +802,6 @@ export const LeaveList = () => {
                                         typeApi="leavetype"
                                         require={true}
                                         disabled={true}
-
                                     />
                                     <div></div>
                                     <RangeCalendarTimeField
@@ -815,7 +817,6 @@ export const LeaveList = () => {
                                         placeholder="Chọn ngày nghỉ phép"
                                         require={true}
                                         disabled={true}
-                                        
                                     />
                                     <div className="col-span-2">
                                         <TextareaField
@@ -824,7 +825,6 @@ export const LeaveList = () => {
                                             placeholder="Nhập lý do xin nghỉ"
                                             require={true}
                                             disabled={true}
-
                                         />
                                     </div>
                                     {user?.RoleName === 'Admin' && (
@@ -844,7 +844,7 @@ export const LeaveList = () => {
                                                 <Badge
                                                     className={`${colorBucket['Chờ xác nhận']} hover:${colorBucket['Chờ xác nhận']}`}
                                                 >
-                                                   Chờ xác nhận
+                                                    Chờ xác nhận
                                                 </Badge>
                                             </SelectItem>
                                             <SelectItem value="Chờ phê duyệt">

@@ -69,6 +69,7 @@ import * as yup from 'yup';
 import { DataSetter } from '../ScheduleComponents';
 import { STATIC_HOST } from '@/constants';
 import { Tag, TagInput } from '@/components/ui/tag-input';
+import StorageKeys from '@/constants/storage-keys';
 interface FilterDateForm {
     dateRange?: string;
 }
@@ -332,10 +333,18 @@ export const TimeKeepList = () => {
             }
         })();
     };
+    const token = localStorage.getItem(StorageKeys.TOKEN);
     const handleExport2 = () => {
         (async () => {
             if (date && date.from && date.to) {
-                window.open(`${STATIC_HOST}timesheet/timesheet-infor?from=${format(date.from, 'yyyy-MM-dd')}&to=${format(date.to, 'yyyy-MM-dd')}`, "_blank", "noreferrer")
+                window.open(
+                    `${STATIC_HOST}timesheet/timesheet-infor?from=${format(
+                        date.from,
+                        'yyyy-MM-dd'
+                    )}&to=${format(date.to, 'yyyy-MM-dd')}&token=${token}`,
+                    '_blank',
+                    'noreferrer'
+                );
             } else {
                 toast({
                     variant: 'destructive',
@@ -492,7 +501,7 @@ export const TimeKeepList = () => {
     };
     return (
         <div className="w-full space-y-4">
-              <Dialog open={openTask} onOpenChange={setOpenTask}>
+            <Dialog open={openTask} onOpenChange={setOpenTask}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Task của {dataTask?.EmpName}</DialogTitle>
@@ -516,7 +525,6 @@ export const TimeKeepList = () => {
                                 : false
                         }
                     />
-                    
                 </DialogContent>
             </Dialog>
             <div className="flex items-center">
@@ -611,7 +619,7 @@ export const TimeKeepList = () => {
                                 </DialogClose>
                                 <Button onClick={exportToExcel} className="flex gap-3">
                                     <Icons.sheet />
-                                    Xuất dữ liệu 
+                                    Xuất dữ liệu
                                 </Button>
                             </DialogFooter>
                         </DialogContent>

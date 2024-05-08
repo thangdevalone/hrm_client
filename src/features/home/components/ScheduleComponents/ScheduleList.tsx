@@ -43,6 +43,7 @@ import {
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
 import { STATIC_HOST, STATIC_HOST_NO_SPLASH } from '@/constants';
+import StorageKeys from '@/constants/storage-keys';
 import { cn } from '@/lib/utils';
 import {
     InfoConfigSchedule,
@@ -144,6 +145,7 @@ export const ScheduleList = () => {
         setPeopleData(data);
         setOpen(true);
     };
+    const token=localStorage.getItem(StorageKeys.TOKEN)
     const { toast } = useToast();
     const handleExport2 = () => {
         (async () => {
@@ -152,7 +154,7 @@ export const ScheduleList = () => {
                     `${STATIC_HOST}schedule/schedule-infor?from=${format(
                         date.from,
                         'yyyy-MM-dd'
-                    )}&to=${format(date.to, 'yyyy-MM-dd')}`,
+                    )}&to=${format(date.to, 'yyyy-MM-dd')}&token=${token}`,
                     '_blank',
                     'noreferrer'
                 );
