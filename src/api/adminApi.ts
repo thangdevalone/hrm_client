@@ -1,4 +1,13 @@
-import { DepartmentCreateForm, DepartmentEditForm, InfoAccount, JobCreateForm, JobEditForm, QueryParam, RoleCreateForm, RoleEditForm } from '@/models';
+import {
+    DepartmentCreateForm,
+    DepartmentEditForm,
+    InfoAccount,
+    JobCreateForm,
+    JobEditForm,
+    QueryParam,
+    RoleCreateForm,
+    RoleEditForm,
+} from '@/models';
 import { ConvertQueryParam } from '@/utils';
 import axiosClient from './axiosClient';
 
@@ -12,7 +21,7 @@ export const adminApi = {
         return axiosClient.get(url);
     },
     getUserAccount(param?: QueryParam) {
-        const url = `employee/list-username${ConvertQueryParam(param)}`;
+        const url = `users${ConvertQueryParam(param)}`;
         return axiosClient.get(url);
     },
     getListLeave(param?: QueryParam) {
@@ -20,19 +29,19 @@ export const adminApi = {
         return axiosClient.get(url);
     },
     getJob(param?: QueryParam) {
-        const url = `job/list-job${ConvertQueryParam(param)}`;
+        const url = `jobs${ConvertQueryParam(param)}`;
         return axiosClient.get(url);
     },
     getRole(param?: QueryParam) {
-        const url = `role/list-role${ConvertQueryParam(param)}`;
+        const url = `roles${ConvertQueryParam(param)}`;
         return axiosClient.get(url);
     },
     getDepartment(param?: QueryParam) {
-        const url = `department/list-department${ConvertQueryParam(param)}`;
+        const url = `departments${ConvertQueryParam(param)}`;
         return axiosClient.get(url);
     },
     createJob(data: JobCreateForm) {
-        const url = 'job/create-job';
+        const url = 'jobs';
         return axiosClient.post(url, data);
     },
     createRole(data: RoleCreateForm) {
@@ -40,31 +49,31 @@ export const adminApi = {
         return axiosClient.post(url, data);
     },
     createDepartment(data: DepartmentCreateForm) {
-        const url = 'department/create-department';
+        const url = 'departments';
         return axiosClient.post(url, data);
     },
-    editAccount(id:string,data:InfoAccount){
+    editAccount(id: string, data: InfoAccount) {
         const url = `account/update-account/${id}`;
-        return axiosClient.patch(url,data)
+        return axiosClient.patch(url, data);
     },
-    editJob(id: number,data:JobEditForm) {
-        const url = `job/update-job/${id}`;
-        return axiosClient.patch(url,data);
+    editJob(id: string, data: JobEditForm) {
+        const url = `jobs/${id}`;
+        return axiosClient.patch(url, data);
     },
-    editRole(id: number,data:RoleEditForm) {
+    editRole(id: number, data: RoleEditForm) {
         const url = `role/update-role/${id}`;
-        return axiosClient.patch(url,data);
+        return axiosClient.patch(url, data);
     },
-    editDepartment(id:number,data:DepartmentEditForm){
-        const url = `department/update-department/${id}`;
-        return axiosClient.patch(url,data);
+    editDepartment(id: string, data: DepartmentEditForm) {
+        const url = `departments/${id}`;
+        return axiosClient.patch(url, data);
     },
     deleteJob(id: string) {
-        const url = `job/delete-job/${id}`;
+        const url = `jobs/${id}`;
         return axiosClient.delete(url);
     },
     deleteDepartment(id: string) {
-        const url = `department/delete-department/${id}`;
+        const url = `departments/${id}`;
         return axiosClient.delete(url);
     },
     deleteRole(id: string) {

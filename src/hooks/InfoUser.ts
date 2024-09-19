@@ -1,7 +1,6 @@
 import { useAppSelector } from '@/app/hooks';
-import { InforUser } from '@/models';
+import { InfoUser } from '@/models';
 
-export const useInfoUser = (): InforUser | undefined => {
-    const user = useAppSelector((state) => state.auth.currentUser);
-    return user;
+export const useInfoUser = (): InfoUser | undefined => {
+    return useAppSelector((state) => state.auth.currentUser);
 };

@@ -1,25 +1,17 @@
-import { InforUser } from '.';
+import { InfoUser } from '.';
 
 export interface LoginForm {
     username: string;
     password: string;
 }
-export interface RegisterForm {
-    fullName: string;
-    username: string;
-    email: string;
-    password: string;
-    rePassword: string;
-}
 
 export interface LoginRes {
-    data: InforUser;
-    response: string;
-    token: Token;
-    status: number;
+    code: number;
+    data: LoginData;
 }
 
-export interface Token {
-    refresh: string;
-    access: string;
+export interface LoginData {
+    token: string;
+    authenticated: boolean;
+    employee: InfoUser;
 }

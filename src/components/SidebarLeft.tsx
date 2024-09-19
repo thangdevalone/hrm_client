@@ -24,7 +24,6 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from './ui/alert-dialog';
-import { STATIC_HOST_NO_SPLASH } from '@/constants';
 import { authActions } from '@/features/auth/AuthSlice';
 import { useState } from 'react';
 import { useInfoUser } from '@/hooks';
@@ -35,21 +34,23 @@ interface SidebarProps {
     className: string;
     setCollapse: (newCollapse: boolean) => void;
 }
+
 function shorten(username: string): string {
-    console.log(username)
-    const parts = username.trim().split(" ");
+    const parts = username.trim().split(' ');
 
     if (parts.length <= 2) {
-      return parts[0] + (parts[1] ? " " + parts[1] : ""); 
+        return parts[0] + (parts[1] ? ' ' + parts[1] : '');
     }
-  
-    return parts.slice(0, -1).map(part => part[0] + ".").join("").slice(0, -1) + " " + parts.pop();
+
+    return parts.slice(0, -1).map(part => part[0] + '.').join('').slice(0, -1) + ' ' + parts.pop();
 }
+
 export const SidebarLeft = ({ className, collapse, setCollapse }: SidebarProps) => {
     const navitage = useNavigate();
     const theme = useTheme();
     const location = useLocation();
     const handleNavitage = (router: string) => {
+        console.log(router)
         if (location.pathname.includes(router)) return;
         navitage(`/home/${router}`);
     };
@@ -99,7 +100,7 @@ export const SidebarLeft = ({ className, collapse, setCollapse }: SidebarProps) 
                                     {!collapse && 'Trang quản trị'}
                                 </Button>
                             )}
-                            {P?.IS_ADMIN_OR_HR_MANAGER && (
+                            {P?.IS_ADMIN_OR_HR && (
                                 <Button
                                     onClick={() => handleNavitage('info-employee')}
                                     variant={
@@ -130,19 +131,6 @@ export const SidebarLeft = ({ className, collapse, setCollapse }: SidebarProps) 
                                 {!collapse && 'Chấm công'}
                             </Button>
                             <Button
-                                onClick={() => handleNavitage('schedules')}
-                                variant={
-                                    location.pathname.includes('schedules') ? 'secondary' : 'ghost'
-                                }
-                                className="w-full gap-3 justify-start h-10"
-                            >
-                                <Icons.schedule
-                                    className="w-5 h-5"
-                                    color={theme.theme === 'dark' ? '#ffffff' : 'black'}
-                                />
-                                {!collapse && 'Đăng kí lịch'}
-                            </Button>
-                            <Button
                                 onClick={() => handleNavitage('leave')}
                                 variant={
                                     location.pathname.includes('leave') ? 'secondary' : 'ghost'
@@ -161,13 +149,15 @@ export const SidebarLeft = ({ className, collapse, setCollapse }: SidebarProps) 
                 <div className="px-3">
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <div className='flex px-3 py-2 rounded-md flex-row gap-3 items-center cursor-pointer hover:bg-accent hover:text-accent-foreground'>
+                            <div
+                                className="flex px-3 py-2 rounded-md flex-row gap-3 items-center cursor-pointer hover:bg-accent hover:text-accent-foreground">
                                 <img
-                                    src={`${STATIC_HOST_NO_SPLASH + user?.PhotoPath}`}
+                                    src={`${user?.photoPath}`}
                                     alt="avatar"
-                                    className={cn(" cursor-pointer  border rounded-full",collapse?"":"w-10 h-10")}
+                                    className={cn(' cursor-pointer  border rounded-full', collapse ? '' : 'w-10 h-10')}
                                 />
-                                {!collapse &&user && user.EmpName && <strong>{shorten(user.EmpName)}</strong>}{' '}
+                                {!collapse && user && user.employeeName &&
+                                    <strong>{shorten(user.employeeName)}</strong>}{' '}
                             </div>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent side="left" align="end">

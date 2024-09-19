@@ -4,13 +4,10 @@ import axiosClient from './axiosClient';
 
 const authApi = {
     login(data: LoginForm) {
-        const url = 'login';
+        const url = 'auth/login';
         return axiosClient.post(url, data);
     },
-    hello() {
-        const url = 'auth/hello';
-        return axiosClient.get(url);
-    },
+
     changePass(id:number,data:ChangePass){
         const postData={
             current_password:data.current_password,

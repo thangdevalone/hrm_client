@@ -1,19 +1,12 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { adminApi } from '@/api/adminApi';
-import { SearchField, TextField } from '@/components/FormControls';
+import { TextField } from '@/components/FormControls';
 import { DataTablePagination, DataTableViewOptions } from '@/components/common';
 import { DataTableColumnHeader } from '@/components/common/DataTableColumnHeader';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -23,22 +16,9 @@ import {
 import { Form } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
-import {
-    DepartmentCreateForm,
-    DepartmentEditForm,
-    InfoDepartment,
-    ListResponse,
-    QueryParam,
-} from '@/models';
+import { DepartmentCreateForm, DepartmentEditForm, InfoDepartment, ListResponse, QueryParam } from '@/models';
 import { ConvertQueryParam } from '@/utils';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { DialogTrigger } from '@radix-ui/react-dialog';
@@ -46,15 +26,15 @@ import { DotsHorizontalIcon, PlusCircledIcon, ReloadIcon } from '@radix-ui/react
 import {
     ColumnDef,
     ColumnFiltersState,
-    PaginationState,
-    SortingState,
-    VisibilityState,
     flexRender,
     getCoreRowModel,
     getFilteredRowModel,
     getPaginationRowModel,
     getSortedRowModel,
+    PaginationState,
+    SortingState,
     useReactTable,
+    VisibilityState,
 } from '@tanstack/react-table';
 import { debounce } from 'lodash';
 import queryString from 'query-string';
@@ -91,8 +71,8 @@ export const ManagerDepartment = () => {
     const handleNavigateQuery = () => {
         const paramObject: QueryParam = {
             query: query,
-            pageIndex: pagination.pageIndex + 1,
-            pageSize: pagination.pageSize,
+            page: pagination.pageIndex,
+            size: pagination.pageSize,
             sort_by: sorting[0].id,
             asc: !sorting[0].desc,
             filters: columnFilters,
@@ -106,12 +86,14 @@ export const ManagerDepartment = () => {
         try {
             setLoadingTable(true);
             const parsed = queryString.parse(
-                location.search ? location.search : '?pageIndex=1&pageSize=10&query='
+                location.search ? location.search : '?pageIndex=1&pageSize=10&query=',
             ) as unknown as QueryParam;
-            const response = (await adminApi.getDepartment(parsed)) as unknown as ListResponse;
-            setListDepartment(response.data);
-            setTotalRow(response.total_rows);
-            setPageCount(Math.ceil(response.total_rows / table.getState().pagination.pageSize));
+            const { data } = (await adminApi.getDepartment(parsed)) as unknown as {
+                data: ListResponse<InfoDepartment[]>
+            };
+            setListDepartment(data.data);
+            setTotalRow(data.totalItems);
+            setPageCount(Math.ceil(data.totalItems / table.getState().pagination.pageSize));
         } catch (error) {
             console.log(error);
         } finally {
@@ -129,7 +111,7 @@ export const ManagerDepartment = () => {
                 <Checkbox
                     checked={
                         table.getIsAllPageRowsSelected() ||
-                            (table.getIsSomePageRowsSelected() ? 'indeterminate' : false)
+                        (table.getIsSomePageRowsSelected() ? 'indeterminate' : false)
                     }
                     className="ml-2"
                     onCheckedChange={(value: boolean) => table.toggleAllPageRowsSelected(!!value)}
@@ -147,24 +129,19 @@ export const ManagerDepartment = () => {
             enableHiding: false,
         },
         {
-            accessorKey: 'DepName',
+            accessorKey: 'depName',
             header: ({ column }) => <DataTableColumnHeader column={column} title="Phòng ban" />,
-            cell: ({ row }) => <div>{row.getValue('DepName')}</div>,
+            cell: ({ row }) => <div>{row.getValue('depName')}</div>,
         },
         {
-            accessorKey: 'DepShortName',
+            accessorKey: 'depShortName',
             header: ({ column }) => <DataTableColumnHeader column={column} title="Tên ngắn" />,
-            cell: ({ row }) => <div>{row.getValue('DepShortName')}</div>,
+            cell: ({ row }) => <div>{row.getValue('depShortName')}</div>,
         },
         {
-            accessorKey: 'employee_count',
+            accessorKey: 'employeeCount',
             header: ({ column }) => <DataTableColumnHeader column={column} title="Số nhân viên" />,
-            cell: ({ row }) => <div>{row.getValue('employee_count')}</div>,
-        },
-        {
-            accessorKey: 'EmpName',
-            header: ({ column }) => <DataTableColumnHeader column={column} title="Quản lý" />,
-            cell: ({ row }) => <div>{row.getValue('EmpName')}</div>,
+            cell: ({ row }) => <div>{row.getValue('employeeCount')}</div>,
         },
         {
             id: 'actions',
@@ -203,14 +180,10 @@ export const ManagerDepartment = () => {
         },
     ];
     const handleValueEdit = (data: InfoDepartment) => {
-        formEdit.setValue('DepID', data.DepID);
-        formEdit.setValue('DepName', data.DepName);
-        formEdit.setValue('DepShortName', data.DepShortName);
-        if (data.ManageID) {
-            formEdit.setValue('ManageID', data.ManageID);
-        }
+        formEdit.setValue('depName', data.id);
+        formEdit.setValue('depShortName', data.depShortName);
         setOpenEditForm(true);
-        console.log(formEdit, data.DepID);
+        console.log(formEdit, data.id);
     };
     const table = useReactTable({
         data: listDepartment,
@@ -240,18 +213,18 @@ export const ManagerDepartment = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const debouncedSetQuery = React.useCallback(
         debounce((value) => setQuery(value), 500),
-        []
+        [],
     );
 
     const schema_create = yup.object().shape({
-        DepName: yup.string().required('Cần chọn phòng ban'),
-        DepShortName: yup.string().required('Cần nhập tên viết tắt của phòng ban'),
-        ManageID: yup.number().required('Cần chọn người quản lý'),
+        depName: yup.string().required('Cần nhập phòng ban'),
+        depShortName: yup.string().max(3, 'Tối đa 3 kí tự').required('Cần nhập tên viết tắt của phòng ban'),
+
     });
     const schema_edit = yup.object().shape({
-        DepName: yup.string().required('Cần chọn phòng ban'),
-   
-        ManageID: yup.number().required('Cần chọn người quản lý'),
+        depName: yup.string().required('Cần nhập phòng ban'),
+        depShortName: yup.string().max(3, 'Tối đa 3 kí tự').required('Cần nhập tên viết tắt của phòng ban'),
+
     });
 
     const formCreate = useForm<DepartmentCreateForm>({
@@ -264,11 +237,11 @@ export const ManagerDepartment = () => {
     const handleEdit: SubmitHandler<DepartmentEditForm> = (data) => {
         (async () => {
             try {
-                if (data?.DepID !== undefined) {
+                if (data?.id !== undefined) {
                     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                    const { DepID, DepShortName, ...postData } = data;
+                    const { id, ...postData } = data;
                     setLoading(true);
-                    await adminApi.editDepartment(DepID, postData);
+                    await adminApi.editDepartment(id, postData);
                     fetchData();
                     setOpenEditForm(false);
                     toast({
@@ -293,7 +266,7 @@ export const ManagerDepartment = () => {
                 setLoading(true);
                 await adminApi.createDepartment(data);
                 setOpenCreateForm(false);
-                fetchData()
+                fetchData();
                 toast({
                     title: 'Thành công',
                     description: 'Tạo phòng ban thành công',
@@ -320,7 +293,7 @@ export const ManagerDepartment = () => {
                 description: 'Xóa thành công',
             });
             fetchData();
-            setOpenDeleteForm(false)
+            setOpenDeleteForm(false);
         } catch (error: any) {
             toast({
                 variant: 'destructive',
@@ -362,25 +335,18 @@ export const ManagerDepartment = () => {
                                 <form onSubmit={formCreate.handleSubmit(handleCreate)}>
                                     <div className="grid grid-cols-2 gap-3 mb-3">
                                         <TextField
-                                            name="DepName"
+                                            name="depName"
                                             label="Tên phòng ban"
                                             placeholder="Công nghệ thông tin,..."
                                             require={true}
                                         />
                                         <TextField
-                                            name="DepShortName"
+                                            name="depShortName"
                                             label="Tên viết tắt"
                                             placeholder="DE,DA,..."
                                             require={true}
                                         />
 
-                                        <SearchField
-                                            name="ManageID"
-                                            label="Quản lý"
-                                            placeholder="Chọn quản lý"
-                                            typeApi="employee"
-                                            require={true}
-                                        />
                                     </div>
                                     <DialogFooter className="w-full sticky mt-4">
                                         <DialogClose asChild>
@@ -420,9 +386,9 @@ export const ManagerDepartment = () => {
                                                 {header.isPlaceholder
                                                     ? null
                                                     : flexRender(
-                                                          header.column.columnDef.header,
-                                                          header.getContext()
-                                                      )}
+                                                        header.column.columnDef.header,
+                                                        header.getContext(),
+                                                    )}
                                             </TableHead>
                                         );
                                     })}
@@ -441,7 +407,7 @@ export const ManagerDepartment = () => {
                                                 <TableCell key={cell.id}>
                                                     {flexRender(
                                                         cell.column.columnDef.cell,
-                                                        cell.getContext()
+                                                        cell.getContext(),
                                                     )}
                                                 </TableCell>
                                             ))}
@@ -476,7 +442,7 @@ export const ManagerDepartment = () => {
                         <DialogTitle>Xác nhận xóa phòng ban?</DialogTitle>
                     </DialogHeader>
                     <p>
-                        Bạn có chắc chắn xóa phòng ban <strong>{selectRowDelete?.DepName}</strong>?
+                        Bạn có chắc chắn xóa phòng ban <strong>{selectRowDelete?.depName}</strong>?
                     </p>
                     <DialogFooter>
                         <DialogClose asChild>
@@ -493,7 +459,7 @@ export const ManagerDepartment = () => {
                         <Button
                             type="button"
                             autoFocus
-                            onClick={() => handleDeleteDepartment(selectRowDelete?.DepID + '')}
+                            onClick={() => handleDeleteDepartment(selectRowDelete?.id + '')}
                             disabled={loading}
                         >
                             {loading && <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />} Xóa
@@ -510,26 +476,19 @@ export const ManagerDepartment = () => {
                         <form onSubmit={formEdit.handleSubmit(handleEdit)}>
                             <div className="grid grid-cols-2 gap-3 mb-3">
                                 <TextField
-                                    name="DepName"
+                                    name="depName"
                                     label="Tên phòng ban"
                                     placeholder="Công nghệ thông tin,..."
                                     require={true}
                                 />
                                 <TextField
-                                    name="DepShortName"
+                                    name="depShortName"
                                     label="Tên viết tắt"
                                     placeholder="DE,DA,..."
                                     require={true}
                                     disabled={true}
                                 />
 
-                                <SearchField
-                                    name="ManageID"
-                                    label="Phòng ban"
-                                    placeholder="Chọn quản lý"
-                                    typeApi="employee"
-                                    require={true}
-                                />
                             </div>
                             <DialogFooter className="w-full sticky mt-4">
                                 <DialogClose asChild>

@@ -24,22 +24,9 @@ import {
 import { Form } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
-import {
-    InfoRole,
-    ListResponse,
-    QueryParam,
-    RoleCreateForm,
-    RoleEditForm
-} from '@/models';
+import { InfoRole, ListResponse, QueryParam, RoleCreateForm, RoleEditForm } from '@/models';
 import { ConvertQueryParam } from '@/utils';
 import { yupResolver } from '@hookform/resolvers/yup';
 
@@ -47,15 +34,15 @@ import { DotsHorizontalIcon, PlusCircledIcon, ReloadIcon } from '@radix-ui/react
 import {
     ColumnDef,
     ColumnFiltersState,
-    PaginationState,
-    SortingState,
-    VisibilityState,
     flexRender,
     getCoreRowModel,
     getFilteredRowModel,
     getPaginationRowModel,
     getSortedRowModel,
+    PaginationState,
+    SortingState,
     useReactTable,
+    VisibilityState,
 } from '@tanstack/react-table';
 import { debounce } from 'lodash';
 import queryString from 'query-string';
@@ -67,7 +54,7 @@ import * as yup from 'yup';
 export const ManagerRole = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const [listJob, setListJob] = React.useState<InfoRole[]>([]);
+    const [listRole, setListRole] = React.useState<InfoRole[]>([]);
     const [totalRow, setTotalRow] = React.useState<number>();
     const [pageCount, setPageCount] = React.useState<number>();
 
@@ -93,13 +80,13 @@ export const ManagerRole = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const debouncedSetQuery = React.useCallback(
         debounce((value) => setQuery(value), 500),
-        []
+        [],
     );
     const handleNavigateQuery = () => {
         const paramObject: QueryParam = {
             query: query,
-            pageIndex: pagination.pageIndex + 1,
-            pageSize: pagination.pageSize,
+            page: pagination.pageIndex,
+            size: pagination.pageSize,
             sort_by: sorting[0].id,
             asc: !sorting[0].desc,
             filters: columnFilters,
@@ -115,7 +102,7 @@ export const ManagerRole = () => {
                 <Checkbox
                     checked={
                         table.getIsAllPageRowsSelected() ||
-                            (table.getIsSomePageRowsSelected() ? 'indeterminate' : false)
+                        (table.getIsSomePageRowsSelected() ? 'indeterminate' : false)
                     }
                     className="ml-2"
                     onCheckedChange={(value: boolean) => table.toggleAllPageRowsSelected(!!value)}
@@ -133,14 +120,14 @@ export const ManagerRole = () => {
             enableHiding: false,
         },
         {
-            accessorKey: 'RoleID',
+            accessorKey: 'id',
             header: ({ column }) => <DataTableColumnHeader column={column} title="Mã vai trò" />,
-            cell: ({ row }) => <div>{row.getValue('RoleID')}</div>,
+            cell: ({ row }) => <div>{row.getValue('id')}</div>,
         },
         {
-            accessorKey: 'RoleName',
+            accessorKey: 'roleName',
             header: ({ column }) => <DataTableColumnHeader column={column} title="Tên vai trò" />,
-            cell: ({ row }) => <div>{row.getValue('RoleName')}</div>,
+            cell: ({ row }) => <div>{row.getValue('roleName')}</div>,
         },
         {
             id: 'actions',
@@ -180,12 +167,15 @@ export const ManagerRole = () => {
         try {
             setLoadingTable(true);
             const parsed = queryString.parse(
-                location.search ? location.search : '?pageIndex=1&pageSize=10&query='
+                location.search ? location.search : '?page=1&size=10&query=',
             ) as unknown as QueryParam;
-            const jobData = (await adminApi.getRole(parsed)) as unknown as ListResponse;
-            setListJob(jobData.data);
-            setTotalRow(jobData.total_rows);
-            setPageCount(Math.ceil(jobData.total_rows / table.getState().pagination.pageSize));
+            const { data } = (await adminApi.getRole(parsed)) as unknown as {
+                code: string,
+                data: ListResponse<InfoRole[]>
+            };
+            setListRole(data.data);
+            setTotalRow(data.totalItems);
+            setPageCount(Math.ceil(data.totalItems / table.getState().pagination.pageSize));
         } catch (error) {
             console.log(error);
         } finally {
@@ -193,19 +183,19 @@ export const ManagerRole = () => {
         }
     };
     const handleValueEdit = (data: InfoRole) => {
-        formEdit.setValue('RoleName', data.RoleName);
-        formEdit.setValue('RoleID', data.RoleID);
+        formEdit.setValue('roleName', data.roleName);
+        formEdit.setValue('id', data.id);
         setOpenEditForm(true);
     };
     React.useEffect(() => {
         handleNavigateQuery();
 
         fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [query, sorting, columnFilters, pagination]);
 
     const table = useReactTable({
-        data: listJob,
+        data: listRole,
         columns,
         pageCount,
         manualPagination: true,
@@ -231,10 +221,10 @@ export const ManagerRole = () => {
     });
 
     const schema_create = yup.object().shape({
-        RoleName: yup.string().required('Cần nhập tên vai trò'),
+        roleName: yup.string().required('Cần nhập tên vai trò'),
     });
     const schema_edit = yup.object().shape({
-        RoleName: yup.string().required('Cần nhập tên vai trò'),
+        roleName: yup.string().required('Cần nhập tên vai trò'),
     });
     const formCreate = useForm<RoleCreateForm>({
         resolver: yupResolver(schema_create) as Resolver<RoleCreateForm, any>,
@@ -302,7 +292,7 @@ export const ManagerRole = () => {
                 description: 'Xóa thành công',
             });
             fetchData();
-            setOpenDeleteForm(false)
+            setOpenDeleteForm(false);
         } catch (error: any) {
             toast({
                 variant: 'destructive',
@@ -352,7 +342,7 @@ export const ManagerRole = () => {
                                 <form onSubmit={formCreate.handleSubmit(handleCreate)}>
                                     <div className="grid grid-cols-2 gap-3 mx-1 mb-3">
                                         <TextField
-                                            name="RoleName"
+                                            name="roleName"
                                             label="Tên vai trò"
                                             placeholder="Hr"
                                             require={true}
@@ -396,9 +386,9 @@ export const ManagerRole = () => {
                                                 {header.isPlaceholder
                                                     ? null
                                                     : flexRender(
-                                                          header.column.columnDef.header,
-                                                          header.getContext()
-                                                      )}
+                                                        header.column.columnDef.header,
+                                                        header.getContext(),
+                                                    )}
                                             </TableHead>
                                         );
                                     })}
@@ -417,7 +407,7 @@ export const ManagerRole = () => {
                                                 <TableCell key={cell.id}>
                                                     {flexRender(
                                                         cell.column.columnDef.cell,
-                                                        cell.getContext()
+                                                        cell.getContext(),
                                                     )}
                                                 </TableCell>
                                             ))}
@@ -451,9 +441,9 @@ export const ManagerRole = () => {
                     <DialogHeader className="">
                         <DialogTitle>Xác nhận xóa vai trò?</DialogTitle>
                     </DialogHeader>
-                    <p>Xóa chức vụ {selectRowDelete?.RoleName}</p>
+                    <p>Xóa chức vụ {selectRowDelete?.roleName}</p>
                     <p>
-                        Bạn có chắc chắn xóa công việc <strong>{selectRowDelete?.RoleName}</strong>?
+                        Bạn có chắc chắn xóa công việc <strong>{selectRowDelete?.roleName}</strong>?
                     </p>
                     <DialogFooter>
                         <DialogClose asChild>
@@ -469,7 +459,7 @@ export const ManagerRole = () => {
                         </DialogClose>
                         <Button
                             type="submit"
-                            onClick={() => handleDeleteRole(selectRowDelete?.RoleID + '')}
+                            onClick={() => handleDeleteRole(selectRowDelete?.id + '')}
                             disabled={loading}
                         >
                             {loading && <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />} Xóa
@@ -484,14 +474,14 @@ export const ManagerRole = () => {
                     </DialogHeader>
                     <Form {...formEdit}>
                         <form onSubmit={formEdit.handleSubmit(handleEdit)}>
-                                <div className="grid grid-cols-2 gap-3 mx-1 mb-3">
-                                    <TextField
-                                        name="RoleName"
-                                        label="Tên vai trò"
-                                        placeholder="Hr"
-                                        require={true}
-                                    />
-                                </div>
+                            <div className="grid grid-cols-2 gap-3 mx-1 mb-3">
+                                <TextField
+                                    name="roleName"
+                                    label="Tên vai trò"
+                                    placeholder="Hr"
+                                    require={true}
+                                />
+                            </div>
 
                             <DialogFooter className="w-full sticky mt-4">
                                 <DialogClose asChild>

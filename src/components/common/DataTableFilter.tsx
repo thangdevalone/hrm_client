@@ -25,38 +25,37 @@ interface DataTableFilterProps<TData, TValue> {
     title?: string;
     options:
         | {
-              id: string;
-              value: string;
-              icon?: React.ComponentType<{ className?: string }>;
-          }[]
+        id: string;
+        value: string;
+        icon?: React.ComponentType<{ className?: string }>;
+    }[]
         | null;
     api: string;
     reverse?: boolean;
 }
 
 export function DataTableFilter<TData, TValue>({
-    column,
-    title,
-    options,
-    api,
-    reverse = false,
-}: DataTableFilterProps<TData, TValue>) {
+                                                   column,
+                                                   title,
+                                                   options,
+                                                   api,
+                                                   reverse = false,
+                                               }: DataTableFilterProps<TData, TValue>) {
     const facets = column?.getFacetedUniqueValues();
     const selectedValues = new Set(column?.getFilterValue() as string[]);
     const [optionsData, setOptionsData] = React.useState<
         | {
-              id: string;
-              value: string;
-              icon?: React.ComponentType<{ className?: string }>;
-          }[]
+        id: string;
+        value: string;
+        icon?: React.ComponentType<{ className?: string }>;
+    }[]
         | null
     >(options);
     React.useEffect(() => {
         (async () => {
             if (!options) {
                 try {
-                    const res = await queryApi.querySearch({ query: '' }, api);
-                    const data = res.data as unknown as { id: string; value: string }[];
+                    const data = await queryApi.querySearch(api) as unknown as { id: string; value: string }[];
                     setOptionsData(data);
                 } catch (error) {
                     console.log(error);
@@ -90,7 +89,7 @@ export function DataTableFilter<TData, TValue>({
                                     </Badge>
                                 ) : (
                                     optionsData
-                                        ?.filter((option) =>reverse ? selectedValues.has(option.id) : selectedValues.has(option.value))
+                                        ?.filter((option) => reverse ? selectedValues.has(option.id) : selectedValues.has(option.value))
                                         .map((option) => {
                                             console.log(option);
                                             return (
@@ -118,7 +117,7 @@ export function DataTableFilter<TData, TValue>({
                             <CommandGroup>
                                 {optionsData?.map((option) => {
                                     const isSelected = selectedValues.has(
-                                        reverse ? option.id : option.value
+                                        reverse ? option.id : option.value,
                                     );
                                     return (
                                         <CommandItem
@@ -126,16 +125,16 @@ export function DataTableFilter<TData, TValue>({
                                             onSelect={() => {
                                                 if (isSelected) {
                                                     selectedValues.delete(
-                                                        reverse ? option.id : option.value
+                                                        reverse ? option.id : option.value,
                                                     );
                                                 } else {
                                                     selectedValues.add(
-                                                        reverse ? option.id : option.value
+                                                        reverse ? option.id : option.value,
                                                     );
                                                 }
                                                 const filterValues = Array.from(selectedValues);
                                                 column?.setFilterValue(
-                                                    filterValues.length ? filterValues : undefined
+                                                    filterValues.length ? filterValues : undefined,
                                                 );
                                             }}
                                         >
@@ -144,7 +143,7 @@ export function DataTableFilter<TData, TValue>({
                                                     'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
                                                     isSelected
                                                         ? 'bg-primary text-primary-foreground'
-                                                        : 'opacity-50 [&_svg]:invisible'
+                                                        : 'opacity-50 [&_svg]:invisible',
                                                 )}
                                             >
                                                 <CheckIcon className={cn('h-4 w-4')} />
@@ -154,7 +153,8 @@ export function DataTableFilter<TData, TValue>({
                                             )}
                                             <span>{option.value}</span>
                                             {facets?.get(option.value) && (
-                                                <span className="ml-auto flex h-4 w-4 items-center justify-center font-mono text-xs">
+                                                <span
+                                                    className="ml-auto flex h-4 w-4 items-center justify-center font-mono text-xs">
                                                     {facets.get(option.value)}
                                                 </span>
                                             )}

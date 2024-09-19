@@ -1,35 +1,32 @@
-import { useInfoUser } from "@/hooks"
-import { InforUser } from "@/models";
+import { useInfoUser } from '@/hooks';
+import { InfoUser, ROLE_DEF } from '@/models';
+
 class Permission {
-    user: InforUser;
-    constructor(user:InforUser) {
+    user: InfoUser;
+
+    constructor(user: InfoUser) {
         this.user = user;
     }
 
     get IS_ADMIN_OR_HR() {
-        return this.user?.RoleName === "Admin" || this.user?.RoleName === "Hr";
+        return this.user?.role.roleName === ROLE_DEF.ADMIN || this.user?.role.roleName === ROLE_DEF.HR;
     }
-    get IS_ADMIN_OR_HR_MANAGER() {
-        return this.user?.RoleName === "Admin" || this.user?.RoleName === "Hr"|| this.user?.RoleName === "Manager";
-    }
+
     get IS_ADMIN() {
-        return this.user?.RoleName === "Admin";
+        return this.user?.role.roleName === ROLE_DEF.ADMIN;
     }
 
     get IS_HR() {
-        return this.user?.RoleName === "Hr";
+        return this.user?.role.roleName === ROLE_DEF.HR;
     }
 
-    get IS_HR_MANAGER() {
-        return this.user?.RoleName === "Hr" || this.user?.RoleName === "Manager";
-    }
 }
 
 // Sử dụng hook trong functional component
 export const PermissionProvider = () => {
     const user = useInfoUser();
-    if(user){
+    if (user) {
         return new Permission(user);
     }
     return null;
-}
+};

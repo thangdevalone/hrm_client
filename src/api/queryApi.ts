@@ -1,10 +1,8 @@
-import { QueryParam } from '@/models';
-import { ConvertQueryParam } from '@/utils';
 import axiosClient from './axiosClient';
 
 const queryApi = {
-    querySearch(param:QueryParam,type:string) {
-        const url = `/query/${type}${ConvertQueryParam(param)}`;
+    querySearch(type: string) {
+        const url = `/query/${type}`;
         return axiosClient.get(url);
     },
 };

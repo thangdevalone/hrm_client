@@ -10,9 +10,9 @@ import { authActions } from './AuthSlice';
 function* handleLogin(action: PayloadAction<LoginForm>) {
     try {
         const res: LoginRes = yield call(authApi.login, action.payload);
-        yield put(authActions.loginSuccess(res.data));
-        localStorage.setItem(StorageKeys.TOKEN, res.token.access);
-       
+        yield put(authActions.loginSuccess(res.data.employee));
+        localStorage.setItem(StorageKeys.TOKEN, res.data.token);
+
         History.push('/home');
     } catch (error) {
         // Handle the error here
@@ -21,6 +21,7 @@ function* handleLogin(action: PayloadAction<LoginForm>) {
         yield put(authActions.resetAction());
     }
 }
+
 // function* handleRegister(action: PayloadAction<RegisterForm>) {
 //     try {
 //         // const res: ApiResAuth = yield call(authApi.register, action.payload)

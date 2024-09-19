@@ -1,12 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import employeeApi from '@/api/employeeApi';
-import {
-    BankField,
-    CalendarTypingField,
-    SearchField,
-    SelectionField,
-    TextField,
-} from '@/components/FormControls';
+import { BankField, CalendarTypingField, SearchField, SelectionField, TextField } from '@/components/FormControls';
 import { DataTablePagination, DataTableViewOptions } from '@/components/common';
 import { DataTableColumnHeader } from '@/components/common/DataTableColumnHeader';
 import { DataTableFilter } from '@/components/common/DataTableFilter';
@@ -33,40 +27,26 @@ import { Form } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { SelectItem } from '@/components/ui/select';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
 import { authActions } from '@/features/auth/AuthSlice';
 import { useInfoUser } from '@/hooks';
-import {
-    EmployeeCreateForm,
-    EmployeeEditForm,
-    InforEmployee,
-    InforUser,
-    ListResponse,
-    QueryParam,
-} from '@/models';
-import { ColorKey, ConvertQueryParam, colorBucket } from '@/utils';
+import { EmployeeCreateForm, EmployeeEditForm, InfoUser, ListResponse, QueryParam } from '@/models';
+import { colorBucket, ColorKey, ConvertQueryParam } from '@/utils';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { DotsHorizontalIcon, PlusCircledIcon, ReloadIcon } from '@radix-ui/react-icons';
 import {
     ColumnDef,
     ColumnFiltersState,
-    PaginationState,
-    SortingState,
-    VisibilityState,
     flexRender,
     getCoreRowModel,
     getFilteredRowModel,
     getPaginationRowModel,
     getSortedRowModel,
+    PaginationState,
+    SortingState,
     useReactTable,
+    VisibilityState,
 } from '@tanstack/react-table';
 import dayjs from 'dayjs';
 import { debounce } from 'lodash';
@@ -81,7 +61,7 @@ import * as yup from 'yup';
 
 export function EmployeeList() {
     const [sorting, setSorting] = React.useState<SortingState>([{ id: 'EmpID', desc: false }]);
-    const [listEmployees, setListEmployees] = React.useState<InforEmployee[]>([]);
+    const [listEmployees, setListEmployees] = React.useState<InfoUser[]>([]);
     const [totalRow, setTotalRow] = React.useState<number>();
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
     const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
@@ -107,21 +87,21 @@ export function EmployeeList() {
     const phoneRegExp =
         /^((\\+[1-9]{1,4}[ \\-]*)|(\\([0-9]{2,3}\\)[ \\-]*)|([0-9]{2,4})[ \\-]*)*?[0-9]{3,4}?[ \\-]*[0-9]{3,4}?$/;
 
-    const columns: ColumnDef<InforEmployee>[] = [
+    const columns: ColumnDef<InfoUser>[] = [
         {
-            accessorKey: 'UserID',
+            accessorKey: 'id',
             header: ({ column }) => <DataTableColumnHeader column={column} title="Mã nhân viên" />,
-            cell: ({ row }) => <div className="ml-2">{row.getValue('UserID')}</div>,
+            cell: ({ row }) => <div className="ml-2">{row.getValue('id')}</div>,
         },
         {
-            accessorKey: 'EmpName',
+            accessorKey: 'employeeName',
             header: ({ column }) => <DataTableColumnHeader column={column} title="Tên nhân viên" />,
-            cell: ({ row }) => <div>{row.getValue('EmpName')}</div>,
+            cell: ({ row }) => <div>{row.getValue('employeeName')}</div>,
         },
         {
-            accessorKey: 'Gender',
+            accessorKey: 'gender',
             header: 'Giới tính',
-            cell: ({ row }) => <div>{row.getValue('Gender') || 'Không xác định'}</div>,
+            cell: ({ row }) => <div>{row.getValue('gender') || 'Không xác định'}</div>,
         },
         {
             accessorKey: 'JobName',
@@ -134,16 +114,16 @@ export function EmployeeList() {
             cell: ({ row }) => <div>{row.getValue('DepName') || 'Không xác định'}</div>,
         },
         {
-            accessorKey: 'Phone',
+            accessorKey: 'phone',
             header: 'Số điện thoại',
             cell: ({ row }) => <div>{row.getValue('Phone') || 'Không xác định'}</div>,
         },
         {
-            accessorKey: 'EmpStatus',
+            accessorKey: 'employeeStatus',
             header: 'Hình thức',
             cell: ({ row }) => (
-                <Badge className={`${colorBucket[row.getValue('EmpStatus') as ColorKey]}`}>
-                    {row.getValue('EmpStatus')}
+                <Badge className={`${colorBucket[row.getValue('employeeStatus') as ColorKey]}`}>
+                    {row.getValue('employeeStatus')}
                 </Badge>
             ),
         },
@@ -176,7 +156,7 @@ export function EmployeeList() {
     ];
     const debouncedSetQuery = React.useCallback(
         debounce((value) => setQuery(value), 500),
-        []
+        [],
     );
 
     const table = useReactTable({
@@ -207,10 +187,10 @@ export function EmployeeList() {
     const handleNavigateQuery = () => {
         const paramObject: QueryParam = {
             query: query,
-            pageIndex: pagination.pageIndex + 1,
-            pageSize: pagination.pageSize,
+            page: pagination.pageIndex,
+            size: pagination.pageSize,
             sort_by: sorting[0].id,
-            asc: !sorting[0].desc,
+            sort: !sorting[0].desc ? 'ASC' : 'DESC',
             filters: columnFilters,
         };
         const newSearch = ConvertQueryParam(paramObject);
@@ -221,12 +201,14 @@ export function EmployeeList() {
         try {
             setLoadingTable(true);
             const parsed = queryString.parse(
-                location.search ? location.search : '?pageIndex=1&pageSize=10&query='
+                location.search ? location.search : '?pageIndex=1&pageSize=10&query=',
             ) as unknown as QueryParam;
-            const empData = (await employeeApi.getListEmployee(parsed)) as unknown as ListResponse;
-            setListEmployees(empData.data);
-            setTotalRow(empData.total_rows);
-            setPageCount(Math.ceil(empData.total_rows / table.getState().pagination.pageSize));
+            const { data } = (await employeeApi.getListEmployee(parsed)) as unknown as {
+                data: ListResponse<InfoUser[]>
+            };
+            setListEmployees(data.data);
+            setTotalRow(data.totalItems);
+            setPageCount(Math.ceil(data.totalItems / table.getState().pagination.pageSize));
         } catch (error) {
             console.log(error);
         } finally {
@@ -235,71 +217,70 @@ export function EmployeeList() {
     };
     React.useEffect(() => {
         handleNavigateQuery();
-
         fetchData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [query, pagination, sorting, columnFilters]);
     const handleDetailEmp = (id: number) => {
-        navigate(`/home/info-employee/${id}`)
+        navigate(`/home/info-employee/${id}`);
     };
-    const setDataEdit = (data: InforEmployee) => {
-        formEdit.setValue('EmpID', data.EmpID);
-        formEdit.setValue('EmpName', data.EmpName);
-        formEdit.setValue('Phone', data.Phone);
-        formEdit.setValue('HireDate', data.HireDate);
-        formEdit.setValue('BirthDate', data.BirthDate);
-        formEdit.setValue('Address', data.Address);
-        formEdit.setValue('Email', data.Email);
-        formEdit.setValue('EmpStatus', data.EmpStatus);
-        formEdit.setValue('Gender', data.Gender);
-        formEdit.setValue('TaxCode', data.TaxCode);
-        formEdit.setValue('CCCD', data.CCCD);
-        formEdit.setValue('BankAccountNumber', data.BankAccountNumber);
-        formEdit.setValue('BankName', data.BankName?.toUpperCase());
-        formEdit.setValue('DepID', data.DepID);
-        formEdit.setValue('JobID', data.JobID);
-        formEdit.setValue('RoleID', data.RoleID);
+    const setDataEdit = (data: InfoUser) => {
+        formEdit.setValue('id', data.id);
+        formEdit.setValue('employeeName', data.employeeName);
+        formEdit.setValue('phone', data.phone);
+        formEdit.setValue('hireDate', data.hireDate);
+        formEdit.setValue('birthDate', data.birthDate);
+        formEdit.setValue('address', data.address);
+        formEdit.setValue('email', data.email);
+        formEdit.setValue('employeeStatus', data.employeeStatus);
+        formEdit.setValue('gender', data.gender);
+        formEdit.setValue('taxCode', data.taxCode);
+        formEdit.setValue('cccd', data.cccd);
+        formEdit.setValue('bankAccountNumber', data.bankAccountNumber);
+        formEdit.setValue('bankName', data.bankName?.toUpperCase());
+        formEdit.setValue('department', data.department);
+        formEdit.setValue('job', data.role);
+        formEdit.setValue('role', data.job);
         console.log(formEdit);
         setOpenEditDialog(true);
     };
 
     const schema_edit = yup.object().shape({
-        EmpName: yup.string().required('Cần nhập tên tài khoản'),
-        Email: yup.string().email('Gmail không hợp lệ').required('Cần nhập gmail'),
-        CCCD: yup
+        employeeName: yup.string().required('Cần nhập tên tài khoản'),
+        email: yup.string().email('Gmail không hợp lệ').required('Cần nhập gmail'),
+        cccd: yup
             .string()
             .required('Cần nhận căn cước công dân')
             .test(
                 'is-valid-length',
                 'CCCD/CMND phải có độ dài 12 ký tự',
-                (value) => value.length === 12
+                (value) => value.length === 12,
             ),
-        DepID: yup.number().required('Cần nhập tên phòng ban'),
-        JobID: yup.number().required('Cần nhập tên công việc'),
-        RoleID: yup.number().required('Cần nhập vị trí'),
-        EmpStatus: yup.string().required('Cần chọn hình thức'),
-        Phone: yup
+        department: yup.string().required('Cần nhập tên phòng ban'),
+        job: yup.string().required('Cần nhập tên công việc'),
+        role: yup.string().required('Cần nhập vị trí'),
+        empStatus: yup.string().required('Cần chọn hình thức'),
+        phone: yup
             .string()
             .matches(phoneRegExp, 'Số điện thoại không hợp lệ')
             .min(9, 'Quá ngắn')
             .max(11, 'Quá dài'),
     });
     const schema_create = yup.object().shape({
-        EmpName: yup.string().required('Cần nhập tên tài khoản'),
-        Email: yup.string().email('Gmail không hợp lệ').required('Cần nhập gmail'),
-        CCCD: yup
+        employeeName: yup.string().required('Cần nhập tên tài khoản'),
+        email: yup.string().email('Gmail không hợp lệ').required('Cần nhập gmail'),
+        cccd: yup
             .string()
             .required('Cần nhận căn cước công dân')
             .test(
                 'is-valid-length',
                 'CCCD/CMND phải có độ dài 12 ký tự',
-                (value) => value.length === 12
+                (value) => value.length === 12,
             ),
-        DepID: yup.number().required('Cần nhập tên phòng ban'),
-        JobID: yup.number().required('Cần nhập tên công việc'),
-        RoleID: yup.number().required('Cần nhập vị trí'),
-        EmpStatus: yup.string().required('Cần chọn hình thức'),
-        Phone: yup
+        department: yup.string().required('Cần nhập tên phòng ban'),
+        job: yup.string().required('Cần nhập tên công việc'),
+        role: yup.string().required('Cần nhập vị trí'),
+        empStatus: yup.string().required('Cần chọn hình thức'),
+        phone: yup
             .string()
             .matches(phoneRegExp, 'Số điện thoại không hợp lệ')
             .min(9, 'Quá ngắn')
@@ -313,24 +294,24 @@ export function EmployeeList() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         resolver: yupResolver(schema_create) as Resolver<EmployeeCreateForm, any>,
     });
-    const dispatch=useDispatch()
-    const user=useInfoUser()
+    const dispatch = useDispatch();
+    const user = useInfoUser();
     const handleEdit: SubmitHandler<EmployeeEditForm> = (data) => {
         (async () => {
             try {
                 setLoading(true);
-                const { EmpID, ...postData } = data;
+                const { id, ...postData } = data;
                 const reData: EmployeeEditForm = {
                     ...postData,
-                    BirthDate: dayjs(data.BirthDate).format('DD/MM/YYYY'),
-                    HireDate: dayjs(data.HireDate).format('DD/MM/YYYY'),
+                    birthDate: dayjs(data.birthDate).format('DD/MM/YYYY'),
+                    hireDate: dayjs(data.hireDate).format('DD/MM/YYYY'),
                 };
-                if (EmpID) {
-                    const res =await employeeApi.editEmployee(EmpID, reData);
-                    if (EmpID === user?.EmpID) {
-                        dispatch(authActions.setUser(res.data[0] as unknown as InforUser));
+                if (id) {
+                    const res = await employeeApi.editEmployee(id, reData);
+                    if (id === user?.id) {
+                        dispatch(authActions.setUser(res.data[0] as unknown as InfoUser));
                     }
-                    
+
                 }
                 setOpenEditDialog(false);
                 formEdit.reset();
@@ -357,8 +338,8 @@ export function EmployeeList() {
                 setLoading(true);
                 const newData: EmployeeCreateForm = {
                     ...data,
-                    BirthDate: dayjs(data.BirthDate).format('DD/MM/YYYY'),
-                    HireDate: dayjs(data.HireDate).format('DD/MM/YYYY'),
+                    birthDate: dayjs(data.birthDate).format('DD/MM/YYYY'),
+                    hireDate: dayjs(data.hireDate).format('DD/MM/YYYY'),
                 };
                 await employeeApi.createEmployee(newData);
                 setOpenDialog(false);
@@ -396,62 +377,52 @@ export function EmployeeList() {
                     />
                     {table.getColumn('Gender') && (
                         <DataTableFilter
-                            column={table.getColumn('Gender')}
+                            column={table.getColumn('gender')}
                             title="Giới tính"
                             options={[
                                 {
-                                    value: 'Nam',
-                                    id: 'Nam',
+                                    value: 'FEMALE',
+                                    id: 'FEMALE',
                                 },
                                 {
-                                    value: 'Nữ',
-                                    id: 'Nữ',
+                                    value: 'MALE',
+                                    id: 'MALE',
                                 },
-                                {
-                                    value: 'Không xác định',
-                                    id: 'Không xác định',
-                                },
+
                             ]}
                             api=""
                         />
                     )}
-                    {table.getColumn('DepName') && (
+                    {table.getColumn('department') && (
                         <DataTableFilter
-                            column={table.getColumn('DepName')}
+                            column={table.getColumn('department')}
                             title="Phòng ban"
                             options={null}
                             api="department"
                         />
                     )}
-                    {table.getColumn('JobName') && (
+                    {table.getColumn('job') && (
                         <DataTableFilter
-                            column={table.getColumn('JobName')}
+                            column={table.getColumn('job')}
                             title="Công việc"
                             options={null}
                             api="job"
                         />
                     )}
-                    {table.getColumn('EmpStatus') && (
+                    {table.getColumn('empStatus') && (
                         <DataTableFilter
-                            column={table.getColumn('EmpStatus')}
+                            column={table.getColumn('empStatus')}
                             title="Hình thức"
                             options={[
                                 {
-                                    value: 'Toàn thời gian',
-                                    id: '1',
+                                    value: 'FULLTIME',
+                                    id: 'FULLTIME',
                                 },
                                 {
-                                    value: 'Bán thời gian',
-                                    id: '2',
+                                    value: 'PARTTIME',
+                                    id: 'PARTTIME',
                                 },
-                                {
-                                    value: 'Thực tập sinh',
-                                    id: '3',
-                                },
-                                {
-                                    value: 'Ngưng làm việc',
-                                    id: '4',
-                                },
+
                             ]}
                             api=""
                         />
@@ -484,61 +455,58 @@ export function EmployeeList() {
                                                 </p>
                                                 <div className="grid grid-cols-3 gap-3 mb-3">
                                                     <TextField
-                                                        name="EmpName"
+                                                        name="employeeName"
                                                         label="Tên nhân viên"
                                                         placeholder="Nhập tên nhân viên"
                                                         require={true}
                                                     />
                                                     <TextField
-                                                        name="Email"
-                                                        label="Email"
+                                                        name="email"
+                                                        label="email"
                                                         placeholder="Nhập email"
                                                         require={true}
                                                         type="email"
                                                     />
                                                     <TextField
-                                                        name="CCCD"
+                                                        name="cccd"
                                                         label="Số CCCD/CMND"
                                                         placeholder="Nhập CCCD/CMND"
                                                         require={true}
                                                     />
                                                     <SelectionField
-                                                        name="Gender"
+                                                        name="gender"
                                                         label="Giới tính"
                                                         placeholder="Chọn giới tính"
                                                     >
-                                                        <SelectItem value="Nam">Nam</SelectItem>
-                                                        <SelectItem value="Nữ">Nữ</SelectItem>
-                                                        <SelectItem value="Không xác định">
-                                                            Không xác định
-                                                        </SelectItem>
+                                                        <SelectItem value="MALE">Nam</SelectItem>
+                                                        <SelectItem value="FEMALE">Nữ</SelectItem>
                                                     </SelectionField>
 
                                                     <TextField
-                                                        name="TaxCode"
+                                                        name="taxCode"
                                                         label="Mã số thuế"
                                                         placeholder="Nhập mã số thuế"
                                                     />
                                                     <TextField
-                                                        name="Address"
+                                                        name="address"
                                                         label="Địa chỉ"
                                                         placeholder="Nhập địa chỉ"
                                                     />
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-3">
                                                     <BankField
-                                                        name="BankName"
+                                                        name="bankName"
                                                         label="Tên ngân hàng"
                                                         placeholder="Chọn ngân hàng"
                                                     />
                                                     <div className="grid grid-cols-2 gap-3">
                                                         <TextField
-                                                            name="BankAccountNumber"
+                                                            name="bankAccountNumber"
                                                             label="Số tài khoản"
                                                             placeholder="Nhập số tài khoản"
                                                         />
                                                         <TextField
-                                                            name="Phone"
+                                                            name="phone"
                                                             label="Số điện thoại"
                                                             placeholder="Nhập điện thoại"
                                                         />
@@ -551,21 +519,21 @@ export function EmployeeList() {
                                                 </p>
                                                 <div className="grid grid-cols-3 gap-3 ">
                                                     <SearchField
-                                                        name="DepID"
+                                                        name="department"
                                                         label="Phòng ban"
                                                         placeholder="Chọn phòng ban"
                                                         typeApi="department"
                                                         require={true}
                                                     />
                                                     <SearchField
-                                                        name="JobID"
+                                                        name="job"
                                                         label="Chức vụ"
                                                         placeholder="Chọn chức vụ"
                                                         typeApi="job"
                                                         require={true}
                                                     />
                                                     <SearchField
-                                                        name="RoleID"
+                                                        name="role"
                                                         label="Vai trò"
                                                         placeholder="Chọn vai trò"
                                                         typeApi="role"
@@ -574,44 +542,30 @@ export function EmployeeList() {
 
                                                     <SelectionField
                                                         label="Hình thức"
-                                                        name="EmpStatus"
+                                                        name="empStatus"
                                                         placeholder="Chọn hình thức"
                                                     >
-                                                        <SelectItem value="Toàn thời gian">
+                                                        <SelectItem value="FULLTIME">
                                                             <Badge
-                                                                className={`${colorBucket['Toàn thời gian']} hover:${colorBucket['Toàn thời gian']}`}
+                                                                className={`${colorBucket['FULLTIME']} hover:${colorBucket['Thực tập sinh']}]`}
                                                             >
-                                                                Toàn thời gian
+                                                                FULLTIME
                                                             </Badge>
                                                         </SelectItem>
-                                                        <SelectItem value="Bán thời gian">
+                                                        <SelectItem value="PASSTIME">
                                                             <Badge
-                                                                className={`${colorBucket['Bán thời gian']} hover:${colorBucket['Bán thời gian']}`}
+                                                                className={`${colorBucket['PASSTIME']} hover:${colorBucket['Ngưng làm việc']}`}
                                                             >
-                                                                Bán thời gian
-                                                            </Badge>
-                                                        </SelectItem>
-                                                        <SelectItem value="Thực tập sinh">
-                                                            <Badge
-                                                                className={`${colorBucket['Thực tập sinh']} hover:${colorBucket['Thực tập sinh']}]`}
-                                                            >
-                                                                Thực tập sinh
-                                                            </Badge>
-                                                        </SelectItem>
-                                                        <SelectItem value="Ngưng làm việc">
-                                                            <Badge
-                                                                className={`${colorBucket['Ngưng làm việc']} hover:${colorBucket['Ngưng làm việc']}`}
-                                                            >
-                                                                Ngưng làm việc
+                                                                PASSTIME
                                                             </Badge>
                                                         </SelectItem>
                                                     </SelectionField>
                                                     <CalendarTypingField
-                                                        name="HireDate"
+                                                        name="hireDate"
                                                         label="Ngày gia nhập"
                                                     />
                                                     <CalendarTypingField
-                                                        name="BirthDate"
+                                                        name="birthDate"
                                                         label="Ngày sinh"
                                                     />
                                                 </div>
@@ -657,9 +611,9 @@ export function EmployeeList() {
                                                 {header.isPlaceholder
                                                     ? null
                                                     : flexRender(
-                                                          header.column.columnDef.header,
-                                                          header.getContext()
-                                                      )}
+                                                        header.column.columnDef.header,
+                                                        header.getContext(),
+                                                    )}
                                             </TableHead>
                                         );
                                     })}
@@ -680,7 +634,7 @@ export function EmployeeList() {
                                                 <TableCell key={cell.id}>
                                                     {flexRender(
                                                         cell.column.columnDef.cell,
-                                                        cell.getContext()
+                                                        cell.getContext(),
                                                     )}
                                                 </TableCell>
                                             ))}
@@ -755,25 +709,25 @@ export function EmployeeList() {
                                             </SelectionField>
 
                                             <TextField
-                                                name="TaxCode"
+                                                name="taxCode"
                                                 label="Mã số thuế"
                                                 placeholder="Nhập mã số thuế"
                                             />
                                             <TextField
-                                                name="Address"
+                                                name="address"
                                                 label="Địa chỉ"
                                                 placeholder="Nhập địa chỉ"
                                             />
                                         </div>
                                         <div className="grid grid-cols-2 gap-3">
                                             <BankField
-                                                name="BankName"
+                                                name="bankName"
                                                 label="Tên ngân hàng"
                                                 placeholder="Chọn ngân hàng"
                                             />
                                             <div className="grid grid-cols-2 gap-3">
                                                 <TextField
-                                                    name="BankAccountNumber"
+                                                    name="bankAccountNumber"
                                                     label="Số tài khoản"
                                                     placeholder="Nhập số tài khoản"
                                                 />
@@ -814,44 +768,31 @@ export function EmployeeList() {
 
                                             <SelectionField
                                                 label="Hình thức"
-                                                name="EmpStatus"
+                                                name="empStatus"
                                                 placeholder="Chọn hình thức"
                                             >
-                                                <SelectItem value="Toàn thời gian">
+
+                                                <SelectItem value="FULLTIME">
                                                     <Badge
-                                                        className={`${colorBucket['Toàn thời gian']} hover:${colorBucket['Toàn thời gian']}`}
+                                                        className={`${colorBucket['FULLTIME']} hover:${colorBucket['Thực tập sinh']}]`}
                                                     >
-                                                        Toàn thời gian
+                                                        FULLTIME
                                                     </Badge>
                                                 </SelectItem>
-                                                <SelectItem value="Bán thời gian">
+                                                <SelectItem value="PASSTIME">
                                                     <Badge
-                                                        className={`${colorBucket['Bán thời gian']} hover:${colorBucket['Bán thời gian']}`}
+                                                        className={`${colorBucket['PASSTIME']} hover:${colorBucket['Ngưng làm việc']}`}
                                                     >
-                                                        Bán thời gian
-                                                    </Badge>
-                                                </SelectItem>
-                                                <SelectItem value="Thực tập sinh">
-                                                    <Badge
-                                                        className={`${colorBucket['Thực tập sinh']} hover:${colorBucket['Thực tập sinh']}]`}
-                                                    >
-                                                        Thực tập sinh
-                                                    </Badge>
-                                                </SelectItem>
-                                                <SelectItem value="Ngưng làm việc">
-                                                    <Badge
-                                                        className={`${colorBucket['Ngưng làm việc']} hover:${colorBucket['Ngưng làm việc']}`}
-                                                    >
-                                                        Ngưng làm việc
+                                                        PASSTIME
                                                     </Badge>
                                                 </SelectItem>
                                             </SelectionField>
                                             <CalendarTypingField
-                                                name="HireDate"
+                                                name="hireDate"
                                                 label="Ngày gia nhập"
                                             />
                                             <CalendarTypingField
-                                                name="BirthDate"
+                                                name="birthDate"
                                                 label="Ngày sinh"
                                             />
                                         </div>

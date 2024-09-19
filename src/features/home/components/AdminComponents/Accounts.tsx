@@ -6,29 +6,22 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { InfoAccount, ListResponse, QueryParam } from '@/models';
 import { ConvertQueryParam } from '@/utils';
 import { ReloadIcon } from '@radix-ui/react-icons';
 import {
     ColumnDef,
     ColumnFiltersState,
-    PaginationState,
-    SortingState,
-    VisibilityState,
     flexRender,
     getCoreRowModel,
     getFilteredRowModel,
     getPaginationRowModel,
     getSortedRowModel,
+    PaginationState,
+    SortingState,
     useReactTable,
+    VisibilityState,
 } from '@tanstack/react-table';
 import { debounce } from 'lodash';
 import queryString from 'query-string';
@@ -57,27 +50,26 @@ export function Accounts() {
     });
     const debouncedSetQuery = React.useCallback(
         debounce((value) => setQuery(value), 500),
-        []
+        [],
     );
     const handleNavigateQuery = () => {
         const paramObject: QueryParam = {
             query: query,
-            pageIndex: pagination.pageIndex + 1,
-            pageSize: pagination.pageSize,
+            page: pagination.pageIndex,
+            size: pagination.pageSize,
             sort_by: sorting[0].id,
             asc: !sorting[0].desc,
             filters: columnFilters,
         };
-        console.log(columnFilters)
         const newSearch = ConvertQueryParam(paramObject);
         navigate({ search: newSearch });
         location.search = newSearch;
     };
     const columns: ColumnDef<InfoAccount>[] = [
         {
-            accessorKey: 'UserID',
+            accessorKey: 'username',
             header: 'Tên đăng nhập',
-            cell: ({ row }) => <div>{row.getValue('UserID')}</div>,
+            cell: ({ row }) => <div>{row.getValue('username')}</div>,
         },
         {
             accessorKey: 'password',
@@ -86,18 +78,18 @@ export function Accounts() {
         },
 
         {
-            accessorKey: 'EmpName',
+            accessorKey: 'employee',
             header: 'Thuộc về',
-            cell: ({ row }) => <div>{row.getValue('EmpName')}</div>,
+            cell: ({ row }) => <div>{row.original.employee.employeeName}</div>,
         },
         {
-            accessorKey: 'UserStatus',
+            accessorKey: 'userStatus',
             header: 'Trạng thái',
             cell: ({ row }) => (
                 <Badge
-                    className={`${row.getValue('UserStatus') == true ? 'bg-[green]' : 'bg-[red]'}`}
+                    className={`${row.getValue('userStatus') == 'ACTIVE' ? 'bg-[green]' : 'bg-[red]'}`}
                 >
-                    {row.getValue('UserStatus') == true ? 'Hoạt động' : 'Ngưng hoạt động'}
+                    {row.getValue('userStatus') == 'ACTIVE' ? 'Hoạt động' : 'Ngưng hoạt động'}
                 </Badge>
             ),
         },
@@ -105,19 +97,19 @@ export function Accounts() {
             id: 'actions',
             enableHiding: false,
             cell: ({ row }) => {
-                const { UserStatus, EmpID } = row.original;
+                const { userStatus, id, employee } = row.original;
 
                 // eslint-disable-next-line react-hooks/rules-of-hooks
                 const handleSwitchChange = React.useCallback(
                     (checked: boolean) => {
-                        console.log(`Switch for EmpID ${EmpID}: `, checked);
-                        handleEditAccount(EmpID, checked);
+                        console.log(`Switch for EmpID ${employee.employeeName}: `, checked);
+                        handleEditAccount(id, checked);
                     },
-                    [EmpID]
+                    [id],
                 );
 
                 return (
-                    <Switch checked={Boolean(UserStatus)} onCheckedChange={handleSwitchChange} />
+                    <Switch checked={userStatus === 'ACTIVE'} onCheckedChange={handleSwitchChange} />
                 );
             },
         },
@@ -129,15 +121,15 @@ export function Accounts() {
             try {
                 setLoadingTable(true);
                 const parsed = queryString.parse(
-                    location.search ? location.search : '?pageIndex=1&pageSize=10&query='
+                    location.search ? location.search : '?page=1&size=10&query=',
                 ) as unknown as QueryParam;
-                const accResponse = (await adminApi.getUserAccount(
-                    parsed
-                )) as unknown as ListResponse;
-                setListAccount(accResponse.data);
-                setTotalRow(accResponse.total_rows);
+                const { data } = (await adminApi.getUserAccount(
+                    parsed,
+                )) as unknown as { data: ListResponse<InfoAccount[]> };
+                setListAccount(data.data);
+                setTotalRow(data.totalItems);
                 setPageCount(
-                    Math.ceil(accResponse.total_rows / table.getState().pagination.pageSize)
+                    Math.ceil(data.totalItems / table.getState().pagination.pageSize),
                 );
             } catch (error) {
                 console.log(error);
@@ -176,14 +168,14 @@ export function Accounts() {
     // const setDataEdit = (data: Row<InfoAccount>) => {};
 
     const handleEditAccount = (id: string | undefined, checked: boolean) => {
-        if (id===undefined) return;
+        if (id === undefined) return;
         (async () => {
             try {
-                await adminApi.editAccount(id, { UserStatus: checked ? 1 : 0 });
+                await adminApi.editAccount(id, { userStatus: checked ? 'ACTIVE' : 'INACTIVE' });
                 const newData = listAccount.map((account) =>
-                    account.EmpID === id ? { ...account, UserStatus: checked } : account
+                    account.id === id ? { ...account, userStatus: checked ? 'ACTIVE' : 'INACTIVE' } : account,
                 );
-                setListAccount(newData);
+                setListAccount(newData as unknown as InfoAccount[]);
             } catch (error) {
                 console.log(error);
             }
@@ -203,9 +195,9 @@ export function Accounts() {
                             debouncedSetQuery(value);
                         }}
                     />
-                     {table.getColumn('UserStatus') && (
+                    {table.getColumn('userStatus') && (
                         <DataTableFilter
-                            column={table.getColumn('UserStatus')}
+                            column={table.getColumn('userStatus')}
                             title="Trạng thái"
                             options={[
                                 {
@@ -236,9 +228,9 @@ export function Accounts() {
                                                 {header.isPlaceholder
                                                     ? null
                                                     : flexRender(
-                                                          header.column.columnDef.header,
-                                                          header.getContext()
-                                                      )}
+                                                        header.column.columnDef.header,
+                                                        header.getContext(),
+                                                    )}
                                             </TableHead>
                                         );
                                     })}
@@ -257,7 +249,7 @@ export function Accounts() {
                                                 <TableCell key={cell.id}>
                                                     {flexRender(
                                                         cell.column.columnDef.cell,
-                                                        cell.getContext()
+                                                        cell.getContext(),
                                                     )}
                                                 </TableCell>
                                             ))}

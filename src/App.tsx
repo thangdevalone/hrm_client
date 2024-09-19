@@ -3,16 +3,11 @@ import dayjs from 'dayjs';
 import vi from 'dayjs/locale/vi';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import './app.css';
-import {
-    ProtectAdmin,
-    ProtectAdminHrManager,
-    ProtectAuth,
-    ProtectHome,
-} from './components/ProtectRoute';
+import { ProtectAdmin, ProtectAdminHrManager, ProtectAuth, ProtectHome } from './components/ProtectRoute';
 import { NotFound } from './components/common';
 import { LoginPage } from './features/auth/pages/LoginPage';
 import Home from './features/home';
-import { Admin, OverView, PIM, Schedule, TimeKeep } from './features/home/components';
+import { Admin, OverView, PIM, TimeKeep } from './features/home/components';
 import {
     Accounts,
     ManagerDepartment,
@@ -20,16 +15,8 @@ import {
     ManagerRole,
     Organization,
 } from './features/home/components/AdminComponents';
-import { Leave } from './features/home/components/Leave';
-import { LeaveList, LeaveType } from './features/home/components/LeaveComponents';
 import { EmployeeDetail, EmployeeList } from './features/home/components/PimComponents';
-import {
-    ConfigSchedule,
-    ScheduleList,
-    ScheduleReg,
-    WorkShift,
-} from './features/home/components/ScheduleComponents';
-import { TimeKeepList, TimeKeepReg } from './features/home/components/TimeKeepComponents';
+import { TimeKeepList } from './features/home/components/TimeKeepComponents';
 import Welcome from './features/welcome';
 import { PermissionProvider } from './utils';
 import { SettingsLayout } from './features/settings/SettingsLayout';
@@ -49,7 +36,7 @@ import {
 } from './components/ui/alert-dialog';
 import { useDispatch } from 'react-redux';
 import { authActions } from './features/auth/AuthSlice';
-import { LeaveNoP } from './features/home/components/TimeKeepComponents/LeaveNoP';
+
 const checkTokenExpiration = (token: string) => {
     const decodedToken = jwtDecode<JwtPayload>(token);
     const currentTime = Date.now() / 1000; // Chuyển đổi thời gian hiện tại sang định dạng Unix time
@@ -62,6 +49,7 @@ const checkTokenExpiration = (token: string) => {
         } else return true;
     }
 };
+
 function App() {
     dayjs.locale(vi);
     const P = PermissionProvider();
@@ -129,52 +117,11 @@ function App() {
                                     index
                                     element={
                                         <Navigate
-                                            to={
-                                                P?.IS_ADMIN_OR_HR ? 'timekeep-list' : 'timekeep-reg'
-                                            }
+                                            to="timekeep-list"
                                         />
                                     }
                                 />
-                                {P?.IS_ADMIN_OR_HR && (
-                                    <>
-                                        <Route path="timekeep-list" element={<TimeKeepList />} />
-                                        <Route path="timekeep-absent" element={<LeaveNoP />} />
-                                    </>
-                                )}
-                                {!P?.IS_ADMIN && (
-                                    <Route path="timekeep-reg" element={<TimeKeepReg />} />
-                                )}
-                            </Route>
-                            <Route path="leave" element={<Leave />}>
-                                <Route index element={<Navigate to="time-leave-list" />} />
-                                <Route path="time-leave-list" element={<LeaveList />} />
-                                <Route path="leave-type" element={<LeaveType />} />
-                            </Route>
-
-                            <Route path="schedules" element={<Schedule />}>
-                                <Route
-                                    index
-                                    element={
-                                        <Navigate
-                                            to={P?.IS_ADMIN ? 'schedule-list' : 'schedule-reg'}
-                                        />
-                                    }
-                                />
-                                {P?.IS_ADMIN_OR_HR && (
-                                    <Route path="schedule-list" element={<ScheduleList />} />
-                                )}
-                                {!P?.IS_ADMIN && (
-                                    <Route path="schedule-reg" element={<ScheduleReg />} />
-                                )}
-                                {P?.IS_ADMIN && (
-                                    <>
-                                        <Route path="work-shifts" element={<WorkShift />} />
-                                        <Route
-                                            path="config-schedules"
-                                            element={<ConfigSchedule />}
-                                        />
-                                    </>
-                                )}
+                                <Route path="timekeep-list" element={<TimeKeepList />} />
                             </Route>
                         </Route>
                         <Route path="settings" element={<SettingsLayout />}>

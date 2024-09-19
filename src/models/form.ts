@@ -1,5 +1,5 @@
-
-import { TimeValue } from "react-aria";
+import { TimeValue } from 'react-aria';
+import { InfoDepartment, InfoJob, Role } from '@/models/info.ts';
 
 export interface FormAccount {
     username: string;
@@ -8,82 +8,92 @@ export interface FormAccount {
 }
 
 interface EmployeeBaseForm {
-    EmpName: string;
-    Email: string;
-    CCCD: string;
-    DepID: number;
-    JobID: number;
-    RoleID: number;
-    EmpStatus: string;
-    BankAccountNumber?: string;
-    BankName?: string;
-    Gender?: string;
-    TaxCode?: string;
-    Phone?: string;
-    HireDate?: string;
-    BirthDate?: string;
-    Address?: string;
+    id?: string;
+    employeeName?: string;
+    birthDate?: string;
+    gender?: 'MALE' | 'FEMALE';
+    hireDate?: string;
+    email?: string;
+    phone?: string;
+    employeeStatus?: 'FULLTIME' | 'PARTTIME' | 'STOP';
+    taxCode?: number;
+    cccd?: string;
+    address?: string;
+    bankAccountNumber?: number;
+    bankName?: string;
+    photoPath?: string;
+    role?: Role | string;
+    department?: InfoDepartment | string;
+    job?: InfoJob | string;
 }
 
-export interface EmployeeCreateForm extends EmployeeBaseForm {}
+export interface EmployeeCreateForm extends EmployeeBaseForm {
+}
 
 export interface EmployeeEditForm extends EmployeeBaseForm {
-    EmpID?: number;
+    id?: string;
 }
 
 export interface EmployeeEditDetailForm extends EmployeeBaseForm {
     PhotoPath?: string;
     EmpID?: number;
 }
-export interface ChangePass{
-    current_password:string;
-    new_password:string
-    re_password:string;
+
+export interface ChangePass {
+    current_password: string;
+    new_password: string;
+    re_password: string;
 }
+
 export interface RoleEditForm extends RoleCreateForm {
     EmpID?: number;
 }
+
 export interface DepartmentCreateForm {
-    DepName: string;
-    DepShortName: string;
-    ManageID: number;
+    id?: string;
+    depName: string;
+    depShortName: string;
 }
 
 export interface JobCreateForm {
-    DepID: number;
-    JobName: string;
-    Descriptions?: string;
+    id?: string;
+    jobName: string;
+    descriptions: string;
 }
+
 export interface RoleCreateForm {
-   RoleName: string;
+    RoleName: string;
 }
+
 export interface RoleEditForm extends RoleCreateForm {
     RoleID?: number;
 }
+
 export interface JobEditForm extends JobCreateForm {
     JobID?: number;
 }
+
 export interface DepartmentEditForm {
-    DepID?: number;
-    DepName: string;
-    DepShortName?: string;
-    ManageID: number;
+    id?: string;
+    depName: string;
+    depShortName?: string;
 }
 
 export interface LeaveCreateForm {
     LeaveTypeID: number;
-    LeaveStartDate: string ;
+    LeaveStartDate: string;
     LeaveEndDate: string;
     Reason: string;
 }
+
 export interface LeaveEditForm {
     LeaveTypeID: number;
-    LeaveStartDate: string ;
-    LeaveEndDate: string ;
+    LeaveStartDate: string;
+    LeaveEndDate: string;
     Reason: string;
     EmpID: number;
     LeaveRequestID: number;
-  
+
     LeaveStatus?: string | null;
 }
 
@@ -95,38 +105,40 @@ export interface LeaveTypeCreateForm {
 
 export interface WorkShiftCreateForm {
     WorkShiftName: string;
-    StartTime: string; 
+    StartTime: string;
     EndTime: string;
-    Color:string;
+    Color: string;
 }
+
 export interface WorkShiftEditForm {
-    id:number
+    id: number;
     WorkShiftName: string;
-    StartTime?: TimeValue|null; 
-    EndTime?: TimeValue|null;
-    RawStartTime:string;
-    RawEndTime:string
-    Color:string;
+    StartTime?: TimeValue | null;
+    EndTime?: TimeValue | null;
+    RawStartTime: string;
+    RawEndTime: string;
+    Color: string;
 
 }
 
 
 export interface ConfigScheduleCreateForm {
-    TimeBlock:string;
-    DateMin:number;
-    Using:boolean;
-}
-export interface ConfigScheduleEditForm {
-    id:number
-    TimeBlock?:TimeValue|null;
-    DateMin:number;
-    RawTimeBlock:string;
-    Using:boolean;
+    TimeBlock: string;
+    DateMin: number;
+    Using: boolean;
 }
 
-export interface ScheduleCreateForm{
-    EmpID:number,
-    Date:string,
-    WorkShift:number
+export interface ConfigScheduleEditForm {
+    id: number;
+    TimeBlock?: TimeValue | null;
+    DateMin: number;
+    RawTimeBlock: string;
+    Using: boolean;
+}
+
+export interface ScheduleCreateForm {
+    EmpID: number,
+    Date: string,
+    WorkShift: number
 }
 

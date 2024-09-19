@@ -96,7 +96,6 @@ export const LeaveList = () => {
     const [listLeave, setListLeave] = React.useState<InfoLeave[]>([]);
     const [totalRow, setTotalRow] = React.useState<number>();
     const [pageCount, setPageCount] = React.useState<number>();
-
     const [loading, setLoading] = React.useState<boolean>(false);
     const [loadingTable, setLoadingTable] = React.useState(false);
     const [query, setQuery] = React.useState<string>('');

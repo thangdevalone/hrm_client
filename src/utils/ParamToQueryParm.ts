@@ -31,7 +31,6 @@ export const ConvertQueryParam = (param?: QueryParam): string => {
         });
     }
 
-    // Tạo chuỗi truy vấn từ đối tượng queryParams
     const queryString = Object.keys(queryParams)
         .map((key) => `${key}=${queryParams[key]}`)
         .join("&");

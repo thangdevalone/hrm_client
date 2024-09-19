@@ -1,10 +1,9 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { adminApi } from '@/api/adminApi';
-import { SearchField, TextField, TextareaField } from '@/components/FormControls';
+import { TextareaField, TextField } from '@/components/FormControls';
 import { DataTablePagination, DataTableViewOptions } from '@/components/common';
 import { DataTableColumnHeader } from '@/components/common/DataTableColumnHeader';
-import { DataTableFilter } from '@/components/common/DataTableFilter';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -25,22 +24,9 @@ import {
 import { Form } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
-import {
-    InfoJob,
-    JobCreateForm,
-    JobEditForm,
-    ListResponse,
-    QueryParam
-} from '@/models';
+import { InfoJob, JobCreateForm, JobEditForm, ListResponse, QueryParam } from '@/models';
 import { ConvertQueryParam } from '@/utils';
 import { yupResolver } from '@hookform/resolvers/yup';
 
@@ -48,15 +34,15 @@ import { DotsHorizontalIcon, PlusCircledIcon, ReloadIcon } from '@radix-ui/react
 import {
     ColumnDef,
     ColumnFiltersState,
-    PaginationState,
-    SortingState,
-    VisibilityState,
     flexRender,
     getCoreRowModel,
     getFilteredRowModel,
     getPaginationRowModel,
     getSortedRowModel,
+    PaginationState,
+    SortingState,
     useReactTable,
+    VisibilityState,
 } from '@tanstack/react-table';
 import { debounce } from 'lodash';
 import queryString from 'query-string';
@@ -93,13 +79,13 @@ export const ManagerJob = () => {
 
     const debouncedSetQuery = React.useCallback(
         debounce((value) => setQuery(value), 500),
-        []
+        [],
     );
     const handleNavigateQuery = () => {
         const paramObject: QueryParam = {
             query: query,
-            pageIndex: pagination.pageIndex + 1,
-            pageSize: pagination.pageSize,
+            page: pagination.pageIndex,
+            size: pagination.pageSize,
             sort_by: sorting[0].id,
             asc: !sorting[0].desc,
             filters: columnFilters,
@@ -115,7 +101,7 @@ export const ManagerJob = () => {
                 <Checkbox
                     checked={
                         table.getIsAllPageRowsSelected() ||
-                            (table.getIsSomePageRowsSelected() ? 'indeterminate' : false)
+                        (table.getIsSomePageRowsSelected() ? 'indeterminate' : false)
                     }
                     className="ml-2"
                     onCheckedChange={(value: boolean) => table.toggleAllPageRowsSelected(!!value)}
@@ -133,20 +119,21 @@ export const ManagerJob = () => {
             enableHiding: false,
         },
         {
-            accessorKey: 'JobName',
+            accessorKey: 'id',
+            header: ({ column }) => <DataTableColumnHeader column={column} title="Mã" />,
+            cell: ({ row }) => <div>{row.getValue('id')}</div>,
+        },
+        {
+            accessorKey: 'jobName',
             header: ({ column }) => <DataTableColumnHeader column={column} title="Chức vụ" />,
-            cell: ({ row }) => <div>{row.getValue('JobName')}</div>,
+            cell: ({ row }) => <div>{row.getValue('jobName')}</div>,
         },
         {
-            accessorKey: 'DepName',
-            header: ({ column }) => <DataTableColumnHeader column={column} title="Phòng ban" />,
-            cell: ({ row }) => <div>{row.getValue('DepName')}</div>,
-        },
-        {
-            accessorKey: 'Descriptions',
+            accessorKey: 'description',
             header: ({ column }) => <DataTableColumnHeader column={column} title="Mô tả" />,
-            cell: ({ row }) => <div>{row.getValue('Descriptions') || "Không có"}</div>,
+            cell: ({ row }) => <div>{row.getValue('description')}</div>,
         },
+
         {
             id: 'actions',
             enableHiding: false,
@@ -185,13 +172,13 @@ export const ManagerJob = () => {
         try {
             setLoadingTable(true);
             const parsed = queryString.parse(
-                location.search ? location.search : '?pageIndex=1&pageSize=10&query='
+                location.search ? location.search : '?pageIndex=1&pageSize=10&query=',
             ) as unknown as QueryParam;
-            const jobData = (await adminApi.getJob(parsed)) as unknown as ListResponse;
-            setListRole(jobData.data);
-            setTotalRow(jobData.total_rows);
+            const { data } = (await adminApi.getJob(parsed)) as unknown as { data: ListResponse<InfoJob[]> };
+            setListRole(data.data);
+            setTotalRow(data.totalItems);
             setPageCount(
-                Math.ceil(jobData.total_rows / table.getState().pagination.pageSize));
+                Math.ceil(data.totalItems / table.getState().pagination.pageSize));
         } catch (error) {
             console.log(error);
         } finally {
@@ -199,12 +186,9 @@ export const ManagerJob = () => {
         }
     };
     const handleValueEdit = (data: InfoJob) => {
-        if (data.DepID) {
-            formEdit.setValue('DepID', data.DepID);
-        }
-        formEdit.setValue('Descriptions', data.Descriptions);
-        formEdit.setValue('JobName', data.JobName);
-        formEdit.setValue('JobID', data.JobID);
+        formEdit.setValue('descriptions', data.descriptions);
+        formEdit.setValue('jobName', data.jobName);
+        formEdit.setValue('id', data.id);
         setOpenEditForm(true);
     };
     React.useEffect(() => {
@@ -240,28 +224,26 @@ export const ManagerJob = () => {
     });
 
     const schema_create = yup.object().shape({
-        DepID: yup.number().required('Cần chọn phòng ban'),
-        JobName: yup.string().required('Cần nhập tên chức vụ'),
-        Descriptions: yup.string(),
+        jobName: yup.string().required('Cần nhập tên chức vụ'),
+        descriptions: yup.string(),
     });
     const schema_edit = yup.object().shape({
-        DepID: yup.number().required('Cần chọn phòng ban'),
-        JobName: yup.string().required('Cần nhập tên chức vụ'),
-        Descriptions: yup.string(),
+        jobName: yup.string().required('Cần nhập tên chức vụ'),
+        descriptions: yup.string(),
     });
     const formCreate = useForm<JobCreateForm>({
-        resolver: yupResolver(schema_create)  as Resolver<JobCreateForm, any>,
+        resolver: yupResolver(schema_create) as Resolver<JobCreateForm, any>,
     });
     const formEdit = useForm<JobEditForm>({
-        resolver: yupResolver(schema_edit)  as Resolver<JobCreateForm, any>,
+        resolver: yupResolver(schema_edit) as Resolver<JobCreateForm, any>,
     });
     const handleEdit: SubmitHandler<JobEditForm> = (data) => {
         (async () => {
             try {
-                if (data?.JobID !== undefined) {
-                    const { JobID, ...postData } = data;
+                if (data?.id !== undefined) {
+                    const { id, ...postData } = data;
                     setLoading(true);
-                    await adminApi.editJob(JobID, postData);
+                    await adminApi.editJob(id, postData);
                     fetchData();
                     setOpenEditForm(false);
                     toast({
@@ -270,7 +252,6 @@ export const ManagerJob = () => {
                     });
                 }
             } catch (error: any) {
-                console.log({ error: error });
                 toast({
                     variant: 'destructive',
                     title: 'Có lỗi xảy ra',
@@ -315,7 +296,7 @@ export const ManagerJob = () => {
                 description: 'Xóa thành công',
             });
             fetchData();
-            setOpenDeleteForm(false)
+            setOpenDeleteForm(false);
         } catch (error: any) {
             toast({
                 variant: 'destructive',
@@ -340,14 +321,6 @@ export const ManagerJob = () => {
                             debouncedSetQuery(value);
                         }}
                     />
-                    {table.getColumn('DepName') && (
-                        <DataTableFilter
-                            column={table.getColumn('DepName')}
-                            title="Phòng ban"
-                            options={null}
-                            api="department"
-                        />
-                    )}
                     <Dialog open={openCreateForm} onOpenChange={setOpenCreateForm}>
                         <DialogTrigger asChild>
                             <Button className="btn flex gap-2">
@@ -365,20 +338,14 @@ export const ManagerJob = () => {
                                 <form onSubmit={formCreate.handleSubmit(handleCreate)}>
                                     <div className="grid grid-cols-2 gap-3 mx-1 mb-3">
                                         <TextField
-                                            name="JobName"
+                                            name="jobName"
                                             label="Chức vụ"
                                             placeholder="Business analyst"
                                             require={true}
                                         />
-                                        <SearchField
-                                            name="DepID"
-                                            label="Phòng ban"
-                                            placeholder="Chọn phòng ban"
-                                            typeApi="department"
-                                            require={true}
-                                        />
+
                                         <div className="col-span-2">
-                                            <TextareaField name="Descriptions" label="Mô tả" placeholder='Nhập mô tả' />
+                                            <TextareaField name="descriptions" label="Mô tả" placeholder="Nhập mô tả" />
                                         </div>
                                     </div>
                                     <DialogFooter className="w-full sticky mt-4">
@@ -419,9 +386,9 @@ export const ManagerJob = () => {
                                                 {header.isPlaceholder
                                                     ? null
                                                     : flexRender(
-                                                          header.column.columnDef.header,
-                                                          header.getContext()
-                                                      )}
+                                                        header.column.columnDef.header,
+                                                        header.getContext(),
+                                                    )}
                                             </TableHead>
                                         );
                                     })}
@@ -440,7 +407,7 @@ export const ManagerJob = () => {
                                                 <TableCell key={cell.id}>
                                                     {flexRender(
                                                         cell.column.columnDef.cell,
-                                                        cell.getContext()
+                                                        cell.getContext(),
                                                     )}
                                                 </TableCell>
                                             ))}
@@ -474,9 +441,9 @@ export const ManagerJob = () => {
                     <DialogHeader className="">
                         <DialogTitle>Xác nhận xóa công việc?</DialogTitle>
                     </DialogHeader>
-                    <p>Xóa chức vụ {selectRowDelete?.JobName}</p>
+                    <p>Xóa chức vụ {selectRowDelete?.jobName}</p>
                     <p>
-                        Bạn có chắc chắn xóa công việc <strong>{selectRowDelete?.JobName}</strong>?
+                        Bạn có chắc chắn xóa công việc <strong>{selectRowDelete?.jobName}</strong>?
                     </p>
                     <DialogFooter>
                         <DialogClose asChild>
@@ -492,7 +459,7 @@ export const ManagerJob = () => {
                         </DialogClose>
                         <Button
                             type="submit"
-                            onClick={() => handleDeleteJob(selectRowDelete?.JobID + '')}
+                            onClick={() => handleDeleteJob(selectRowDelete?.id + '')}
                             disabled={loading}
                         >
                             {loading && <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />} Xóa
@@ -510,20 +477,13 @@ export const ManagerJob = () => {
                             <ScrollArea className="h-[320px] ">
                                 <div className="grid grid-cols-2 gap-3 mx-1 mb-3">
                                     <TextField
-                                        name="JobName"
+                                        name="jobName"
                                         label="Chức vụ"
                                         placeholder="Business analyst"
                                         require={true}
                                     />
-                                    <SearchField
-                                        name="DepID"
-                                        label="Phòng ban"
-                                        placeholder="Chọn phòng ban"
-                                        typeApi="department"
-                                        require={true}
-                                    />
                                     <div className="col-span-2">
-                                        <TextareaField name="Descriptions" label="Mô tả" placeholder='Nhập mô tả'/>
+                                        <TextareaField name="descriptions" label="Mô tả" placeholder="Nhập mô tả" />
                                     </div>
                                 </div>
                             </ScrollArea>

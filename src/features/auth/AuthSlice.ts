@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { InforUser, LoginForm } from '@/models';
+import { InfoUser, LoginForm } from '@/models';
 import { PayloadAction, createSlice } from '@reduxjs/toolkit';
 
 export interface AuthState {
     logging?: boolean;
     registering?: boolean;
     actionAuth: 'No action' | 'Success' | 'Failed';
-    currentUser?: InforUser;
+    currentUser?: InfoUser;
 }
 
 const initialState: AuthState = {
@@ -24,10 +24,10 @@ export const authSlice = createSlice({
             state.logging = true;
             state.actionAuth = 'No action';
         },
-        setUser(state,action:PayloadAction<InforUser>){
+        setUser(state,action:PayloadAction<InfoUser>){
             state.currentUser=action.payload
         },
-        loginSuccess(state, action: PayloadAction<InforUser>) {
+        loginSuccess(state, action: PayloadAction<InfoUser>) {
             state.logging = false;
             state.actionAuth = 'Success';
             state.currentUser = action.payload;
@@ -41,7 +41,7 @@ export const authSlice = createSlice({
             state.registering = true;
             state.actionAuth = 'No action';
         },
-        registerSuccess(state, action: PayloadAction<InforUser>) {
+        registerSuccess(state, action: PayloadAction<InfoUser>) {
             state.registering = false;
             state.actionAuth = 'Success';
             state.currentUser = action.payload;
@@ -59,7 +59,6 @@ export const authSlice = createSlice({
         resetAction(state) {
             state.actionAuth = 'No action';
         },
-        // ...các action khác
     },
 });
 
